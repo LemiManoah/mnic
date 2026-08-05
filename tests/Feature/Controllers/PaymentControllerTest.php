@@ -6,12 +6,18 @@ use App\Enums\ClubRole;
 use App\Enums\PaymentMethod;
 use App\Models\Member;
 use App\Models\Payment;
+use App\Models\PaymentEvidence;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-it('lists payments for any authenticated member', function (): void {
+it('lists payments with their evidence for any authenticated member', function (): void {
     $actor = memberWithRole(ClubRole::Member);
-    Payment::factory()->create();
+    $payment = Payment::factory()->create();
+
+    PaymentEvidence::factory()->create([
+        'payment_id' => $payment->id,
+        'original_name' => 'receipt.pdf',
+    ]);
 
     $response = $this->actingAs($actor->user)->get(route('payment.index'));
 
@@ -19,6 +25,8 @@ it('lists payments for any authenticated member', function (): void {
         ->assertInertia(fn ($page) => $page->component('payment/index')
             ->has('payments.data', 1)
             ->where('payments.data.0.can_review', false)
+            ->has('payments.data.0.evidence', 1)
+            ->where('payments.data.0.evidence.0.original_name', 'receipt.pdf')
             ->has('members')
             ->has('methodOptions', count(PaymentMethod::cases())));
 });

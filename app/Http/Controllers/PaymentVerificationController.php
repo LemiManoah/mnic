@@ -12,7 +12,6 @@ use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
-use RuntimeException;
 
 final readonly class PaymentVerificationController
 {
@@ -22,11 +21,9 @@ final readonly class PaymentVerificationController
         #[CurrentUser] User $user,
         VerifyPayment $action,
     ): RedirectResponse {
-        $verifier = Member::query()->firstWhere('user_id', $user->id);
-
-        if ($verifier === null) {
-            throw new RuntimeException('The verifying user is not linked to a member record.');
-        }
+        // PaymentPolicy::review already guarantees the reviewer has a member
+        // record, so this cannot miss.
+        $verifier = Member::query()->where('user_id', $user->id)->firstOrFail();
 
         $action->handle($payment, $verifier, $request->ip());
 

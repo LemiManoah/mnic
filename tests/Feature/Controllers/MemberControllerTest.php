@@ -5,8 +5,11 @@ declare(strict_types=1);
 use App\Enums\ClubRole;
 use App\Enums\MemberStatus;
 use App\Models\AuditLog;
+use App\Models\ContributionPeriod;
 use App\Models\Member;
+use App\Models\MemberObligation;
 use App\Models\MembershipStatusHistory;
+use App\Models\Payment;
 
 it('lists members for any authenticated member', function (): void {
     $actor = memberWithRole(ClubRole::Member);
@@ -52,6 +55,34 @@ it('includes activity and edit access for a secretary viewing a member', functio
             ->where('canUpdate', true)
             ->where('canViewActivity', true)
             ->has('auditLogs', 1));
+});
+
+it('shows the contribution ledger on a member profile', function (): void {
+    $actor = memberWithRole(ClubRole::Member);
+    $member = Member::factory()->create();
+    $period = ContributionPeriod::factory()->forMonth(2026, 9)->create();
+
+    MemberObligation::factory()->create([
+        'contribution_period_id' => $period->id,
+        'member_id' => $member->id,
+        'amount' => 60000,
+        'amount_paid' => 25000,
+    ]);
+
+    Payment::factory()->create([
+        'member_id' => $member->id,
+        'reference' => 'MM-LEDGER',
+    ]);
+
+    $response = $this->actingAs($actor->user)->get(route('member.show', $member));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('obligations', 1)
+            ->where('obligations.0.period', '2026-09')
+            ->where('obligations.0.outstanding', 35000)
+            ->has('payments', 1)
+            ->where('payments.0.reference', 'MM-LEDGER'));
 });
 
 it('shows the referring member name on a member profile', function (): void {

@@ -8,6 +8,7 @@ use App\Enums\ClubRole;
 use App\Enums\PaymentMethod;
 use App\Models\Member;
 use App\Models\Payment;
+use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -42,10 +43,7 @@ final class CreatePaymentRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $user = $this->user();
-
-            if ($user === null) {
-                return;
-            }
+            assert($user instanceof User);
 
             if ($user->hasAnyRole([ClubRole::Treasurer->value, ClubRole::Administrator->value])) {
                 return;
@@ -54,7 +52,7 @@ final class CreatePaymentRequest extends FormRequest
             // Everyone else may only record a payment against their own record.
             $member = Member::query()->firstWhere('user_id', $user->id);
 
-            if ($member === null || $member->id !== $this->string('member_id')->value()) {
+            if ($member?->id !== $this->string('member_id')->value()) {
                 $validator->errors()->add('member_id', __('You may only record a payment for yourself.'));
             }
         });
