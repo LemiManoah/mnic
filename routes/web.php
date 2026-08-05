@@ -65,10 +65,12 @@ Route::middleware('auth')->group(function (): void {
 
 Route::middleware('guest')->group(function (): void {
     // User...
-    Route::get('register', [UserController::class, 'create'])
-        ->name('register');
-    Route::post('register', [UserController::class, 'store'])
-        ->name('register.store');
+    // Self-registration is disabled: members are onboarded by the Secretary and
+    // seeded via Database\Seeders\MusuwaNationSeeder. Re-enable to restore it.
+    // Route::get('register', [UserController::class, 'create'])
+    //     ->name('register');
+    // Route::post('register', [UserController::class, 'store'])
+    //     ->name('register.store');
 
     // User Password...
     Route::get('reset-password/{token}', [UserPasswordController::class, 'create'])
