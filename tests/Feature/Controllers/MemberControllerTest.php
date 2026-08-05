@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Enums\ClubRole;
 use App\Enums\MemberStatus;
+use App\Models\AuditLog;
 use App\Models\Member;
+use App\Models\MembershipStatusHistory;
 
 it('lists members for any authenticated member', function (): void {
     $actor = memberWithRole(ClubRole::Member);
@@ -15,21 +17,52 @@ it('lists members for any authenticated member', function (): void {
         ->assertInertia(fn ($page) => $page->component('member/index'));
 });
 
-it('denies plain members from creating members', function (): void {
+it('shows a member profile to any authenticated member', function (): void {
     $actor = memberWithRole(ClubRole::Member);
+    $member = memberWithRole(ClubRole::Treasurer, ['status' => MemberStatus::Active]);
 
-    $response = $this->actingAs($actor->user)->get(route('member.create'));
+    MembershipStatusHistory::factory()->create(['member_id' => $member->id]);
 
-    $response->assertForbidden();
-});
-
-it('allows a secretary to view the create member page', function (): void {
-    $actor = memberWithRole(ClubRole::Secretary);
-
-    $response = $this->actingAs($actor->user)->get(route('member.create'));
+    $response = $this->actingAs($actor->user)->get(route('member.show', $member));
 
     $response->assertOk()
-        ->assertInertia(fn ($page) => $page->component('member/create'));
+        ->assertInertia(fn ($page) => $page->component('member/show')
+            ->where('member.id', $member->id)
+            ->where('currentRole', ClubRole::Treasurer->value)
+            ->where('canUpdate', false)
+            ->where('canViewActivity', false)
+            ->has('statusHistories', 1)
+            ->where('auditLogs', []));
+});
+
+it('includes activity and edit access for a secretary viewing a member', function (): void {
+    $actor = memberWithRole(ClubRole::Secretary);
+    $member = Member::factory()->create();
+
+    AuditLog::factory()->create([
+        'event' => 'member.created',
+        'auditable_type' => Member::class,
+        'auditable_id' => $member->id,
+    ]);
+
+    $response = $this->actingAs($actor->user)->get(route('member.show', $member));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page->component('member/show')
+            ->where('canUpdate', true)
+            ->where('canViewActivity', true)
+            ->has('auditLogs', 1));
+});
+
+it('shows the referring member name on a member profile', function (): void {
+    $actor = memberWithRole(ClubRole::Member);
+    $referrer = Member::factory()->create(['full_name' => 'Referring Member']);
+    $member = Member::factory()->create(['referred_by_member_id' => $referrer->id]);
+
+    $response = $this->actingAs($actor->user)->get(route('member.show', $member));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page->where('referredByName', 'Referring Member'));
 });
 
 it('allows a secretary to view the edit member page', function (): void {

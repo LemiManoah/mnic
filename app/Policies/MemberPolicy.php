@@ -15,6 +15,11 @@ final class MemberPolicy
         return true;
     }
 
+    public function view(User $user, Member $member): bool
+    {
+        return true;
+    }
+
     public function create(User $user): bool
     {
         return $user->hasAnyRole([ClubRole::Secretary->value, ClubRole::Administrator->value]);

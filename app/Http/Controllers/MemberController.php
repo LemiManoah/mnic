@@ -11,7 +11,10 @@ use App\Enums\ClubRole;
 use App\Enums\MemberStatus;
 use App\Http\Requests\CreateMemberRequest;
 use App\Http\Requests\UpdateMemberRequest;
+use App\Models\AuditLog;
 use App\Models\Member;
+use App\Models\MemberObligation;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
@@ -30,11 +33,68 @@ final readonly class MemberController
         ]);
     }
 
-    public function create(): Response
+    public function show(Member $member, #[CurrentUser] User $user): Response
     {
-        Gate::authorize('create', Member::class);
+        Gate::authorize('view', $member);
 
-        return Inertia::render('member/create');
+        $member->loadMissing(['user', 'referredBy']);
+
+        $canViewActivity = $user->can('viewAny', AuditLog::class);
+        $canUpdate = $user->can('update', $member);
+
+        return Inertia::render('member/show', [
+            // The linked user and referrer are hidden so a profile view does not
+            // leak another member's account record; the fields the page needs
+            // are passed explicitly below.
+            'member' => $member->makeHidden(['user', 'referredBy']),
+            'referredByName' => $member->referredBy?->full_name,
+            'currentRole' => $member->user?->getRoleNames()->first(),
+            'email' => $canUpdate ? $member->user?->email : null,
+            'canUpdate' => $canUpdate,
+            'canViewActivity' => $canViewActivity,
+            'statusHistories' => $member->statusHistories()
+                ->orderByDesc('effective_date')
+                ->orderByDesc('created_at')
+                ->get(),
+            'obligations' => $member->obligations()
+                ->with('contributionPeriod')
+                ->get()
+                ->sortByDesc(fn (MemberObligation $obligation): string => sprintf(
+                    '%04d-%02d',
+                    $obligation->contributionPeriod->year,
+                    $obligation->contributionPeriod->month,
+                ))
+                ->values()
+                ->map(fn (MemberObligation $obligation): array => [
+                    'id' => $obligation->id,
+                    'period' => $obligation->contributionPeriod->label(),
+                    'amount' => $obligation->amount,
+                    'amount_paid' => $obligation->amount_paid,
+                    'outstanding' => $obligation->outstanding(),
+                    'status' => $obligation->status,
+                ]),
+            'payments' => $member->payments()
+                ->latest()
+                ->get()
+                ->map(fn (Payment $payment): array => [
+                    'id' => $payment->id,
+                    'amount' => $payment->amount,
+                    'unapplied_amount' => $payment->unapplied_amount,
+                    'paid_on' => $payment->paid_on->toDateString(),
+                    'method' => $payment->method,
+                    'reference' => $payment->reference,
+                    'status' => $payment->status,
+                ]),
+            'auditLogs' => $canViewActivity
+                ? AuditLog::query()
+                    ->with('actorMember')
+                    ->where('auditable_type', Member::class)
+                    ->where('auditable_id', $member->id)
+                    ->latest()
+                    ->limit(50)
+                    ->get()
+                : [],
+        ]);
     }
 
     public function store(CreateMemberRequest $request, #[CurrentUser] User $user, CreateMember $action): RedirectResponse

@@ -1,0 +1,104 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
+use Carbon\CarbonInterface;
+use Database\Factories\PaymentFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+/**
+ * @property-read string $id
+ * @property-read string $member_id
+ * @property-read int $amount
+ * @property-read int $unapplied_amount
+ * @property-read CarbonInterface $paid_on
+ * @property-read PaymentMethod $method
+ * @property-read string $reference
+ * @property-read string|null $notes
+ * @property-read PaymentStatus $status
+ * @property-read string|null $recorded_by_member_id
+ * @property-read string|null $reviewed_by_member_id
+ * @property-read CarbonInterface|null $reviewed_at
+ * @property-read string|null $rejection_reason
+ * @property-read CarbonInterface $created_at
+ * @property-read CarbonInterface $updated_at
+ */
+final class Payment extends Model
+{
+    /** @use HasFactory<PaymentFactory> */
+    use HasFactory;
+
+    use HasUuids;
+
+    /**
+     * @return array<string, string>
+     */
+    public function casts(): array
+    {
+        return [
+            'id' => 'string',
+            'member_id' => 'string',
+            'amount' => 'integer',
+            'unapplied_amount' => 'integer',
+            'paid_on' => 'date',
+            'method' => PaymentMethod::class,
+            'reference' => 'string',
+            'notes' => 'string',
+            'status' => PaymentStatus::class,
+            'recorded_by_member_id' => 'string',
+            'reviewed_by_member_id' => 'string',
+            'reviewed_at' => 'datetime',
+            'rejection_reason' => 'string',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * @return BelongsTo<Member, $this>
+     */
+    public function member(): BelongsTo
+    {
+        return $this->belongsTo(Member::class);
+    }
+
+    /**
+     * @return BelongsTo<Member, $this>
+     */
+    public function recordedByMember(): BelongsTo
+    {
+        return $this->belongsTo(Member::class, 'recorded_by_member_id');
+    }
+
+    /**
+     * @return BelongsTo<Member, $this>
+     */
+    public function reviewedByMember(): BelongsTo
+    {
+        return $this->belongsTo(Member::class, 'reviewed_by_member_id');
+    }
+
+    /**
+     * @return HasMany<PaymentAllocation, $this>
+     */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(PaymentAllocation::class);
+    }
+
+    /**
+     * @return HasMany<PaymentEvidence, $this>
+     */
+    public function evidence(): HasMany
+    {
+        return $this->hasMany(PaymentEvidence::class);
+    }
+}

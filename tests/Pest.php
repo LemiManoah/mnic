@@ -6,6 +6,7 @@ use App\Enums\ClubRole;
 use App\Models\Member;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
+use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
@@ -45,4 +46,13 @@ function memberWithRole(ClubRole $role, array $memberAttributes = []): Member
     $user->assignRole($role->value);
 
     return $member->fresh('user') ?? $member;
+}
+
+/**
+ * Seeds the effective-dated club settings the contribution engine reads
+ * (contribution amount, due day, grace day).
+ */
+function seedClubSettings(): void
+{
+    (new SettingSeeder)->run();
 }

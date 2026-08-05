@@ -3,9 +3,14 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\ContributionPeriodController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberRoleController;
 use App\Http\Controllers\MemberStatusController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentEvidenceController;
+use App\Http\Controllers\PaymentRejectionController;
+use App\Http\Controllers\PaymentVerificationController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
@@ -27,12 +32,26 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     // Members...
     Route::get('members', [MemberController::class, 'index'])->name('member.index');
-    Route::get('members/create', [MemberController::class, 'create'])->name('member.create');
     Route::post('members', [MemberController::class, 'store'])->name('member.store');
+    Route::get('members/{member}', [MemberController::class, 'show'])->name('member.show');
     Route::get('members/{member}/edit', [MemberController::class, 'edit'])->name('member.edit');
     Route::put('members/{member}', [MemberController::class, 'update'])->name('member.update');
     Route::put('members/{member}/status', [MemberStatusController::class, 'update'])->name('member-status.update');
     Route::put('members/{member}/role', [MemberRoleController::class, 'update'])->name('member-role.update');
+
+    // Contribution Periods...
+    Route::get('contribution-periods', [ContributionPeriodController::class, 'index'])->name('contribution-period.index');
+    Route::post('contribution-periods', [ContributionPeriodController::class, 'store'])->name('contribution-period.store');
+    Route::get('contribution-periods/{contributionPeriod}', [ContributionPeriodController::class, 'show'])->name('contribution-period.show');
+
+    // Payments...
+    Route::get('payments', [PaymentController::class, 'index'])->name('payment.index');
+    Route::post('payments', [PaymentController::class, 'store'])->name('payment.store');
+    Route::put('payments/{payment}/verification', [PaymentVerificationController::class, 'update'])->name('payment-verification.update');
+    Route::put('payments/{payment}/rejection', [PaymentRejectionController::class, 'update'])->name('payment-rejection.update');
+    Route::get('payments/{payment}/evidence/{evidence}', [PaymentEvidenceController::class, 'show'])
+        ->scopeBindings()
+        ->name('payment-evidence.show');
 
     // Settings (club configuration)...
     Route::get('club-settings', [SettingController::class, 'index'])->name('setting.index');

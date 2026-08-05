@@ -76,4 +76,20 @@ final class Member extends Model
     {
         return $this->hasMany(MembershipStatusHistory::class);
     }
+
+    /**
+     * @return HasMany<MemberObligation, $this>
+     */
+    public function obligations(): HasMany
+    {
+        return $this->hasMany(MemberObligation::class);
+    }
+
+    /**
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
 }
