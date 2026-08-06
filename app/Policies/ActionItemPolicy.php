@@ -8,8 +8,9 @@ use App\Enums\Permission;
 use App\Models\ActionItem;
 use App\Models\Member;
 use App\Models\User;
+use App\Policies\Concerns\EnforcesBusinessRules;
 
-final class ActionItemPolicy
+final class ActionItemPolicy implements EnforcesBusinessRules
 {
     public function viewAny(): bool
     {

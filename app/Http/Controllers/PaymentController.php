@@ -6,27 +6,42 @@ namespace App\Http\Controllers;
 
 use App\Actions\RecordPayment;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Http\Requests\CreatePaymentRequest;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\PaymentEvidence;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final readonly class PaymentController
 {
-    public function index(#[CurrentUser] User $user): Response
+    public function index(Request $request, #[CurrentUser] User $user): Response
     {
         Gate::authorize('viewAny', Payment::class);
 
+        $search = $request->string('search')->trim()->value();
+        $status = $request->string('status')->value();
+
         $payments = Payment::query()
             ->with(['member', 'recordedByMember', 'reviewedByMember', 'evidence'])
+            ->when($search !== '', fn (Builder $query): Builder => $query
+                ->where(fn (Builder $inner): Builder => $inner
+                    ->where('reference', 'like', "%{$search}%")
+                    ->orWhereHas('member', fn (Builder $member): Builder => $member
+                        ->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('member_number', 'like', "%{$search}%"))))
+            ->when($status !== '', fn (Builder $query): Builder => $query
+                ->where('status', $status))
             ->latest()
             ->paginate(20)
+            ->withQueryString()
             ->through(fn (Payment $payment): array => [
                 'id' => $payment->id,
                 'member_name' => $payment->member->full_name,
@@ -48,6 +63,17 @@ final readonly class PaymentController
 
         return Inertia::render('payment/index', [
             'payments' => $payments,
+            'filters' => [
+                'search' => $search === '' ? null : $search,
+                'status' => $status === '' ? null : $status,
+            ],
+            'statusOptions' => array_map(
+                static fn (PaymentStatus $case): array => [
+                    'value' => $case->value,
+                    'label' => $case->label(),
+                ],
+                PaymentStatus::cases(),
+            ),
             'members' => Member::query()
                 ->orderBy('full_name')
                 ->get(['id', 'full_name', 'member_number']),

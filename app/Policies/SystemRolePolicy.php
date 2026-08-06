@@ -7,9 +7,10 @@ namespace App\Policies;
 use App\Enums\ClubRole;
 use App\Enums\Permission;
 use App\Models\User;
+use App\Policies\Concerns\EnforcesBusinessRules;
 use Spatie\Permission\Models\Role;
 
-final class SystemRolePolicy
+final class SystemRolePolicy implements EnforcesBusinessRules
 {
     public function viewAny(User $user): bool
     {

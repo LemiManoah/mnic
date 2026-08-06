@@ -2,6 +2,7 @@ import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import MemberController from '@/actions/App/Http/Controllers/MemberController';
 import Heading from '@/components/heading';
+import ListFilters from '@/components/list-filters';
 import InputError from '@/components/input-error';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
@@ -156,8 +157,12 @@ function AddMemberDialog() {
 
 export default function MemberIndex({
     members,
+    filters,
+    statusOptions,
 }: {
     members: Paginated<Member>;
+    filters: { search: string | null; status: string | null };
+    statusOptions: Option[];
 }) {
     const { auth } = usePage().props;
     const canCreate =
@@ -178,6 +183,20 @@ export default function MemberIndex({
 
                     {canCreate && <AddMemberDialog />}
                 </div>
+
+                <ListFilters
+                    url={memberIndex().url}
+                    search={filters.search}
+                    placeholder="Search name, member number or phone…"
+                    filters={[
+                        {
+                            name: 'status',
+                            label: 'Status',
+                            value: filters.status,
+                            options: statusOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

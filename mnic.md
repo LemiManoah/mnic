@@ -1,270 +1,265 @@
-# Musuwa Nation Investment Club — Outstanding Work
+# Musuwa Nation Investment Club — Status and Plan
 
-Living backlog for the club management application. Updated 5 August 2026.
+Living document. Updated 5 August 2026.
 
-This document records **what is not yet done**. For what the application already
-does, read the code — every rule lives in an Action class under `app/Actions`
-with a matching test.
+Part one records **where the application actually stands**. Part two is the
+**plan forward**, sequenced so each milestone unblocks the next. For how any
+existing rule works, read the code — every business rule lives in an Action
+class under `app/Actions` with a matching test.
 
 ---
 
-## 1. Status by phase
+# Part one — Where things stand
+
+## 1. Health
+
+| Gate | State |
+|---|---|
+| Test suite | **370 passing**, 1226 assertions (`--testsuite=Unit,Feature`) |
+| Rector + Pint | Clean |
+| TypeScript | Clean |
+| PHPStan | Level max, clean |
+| **Line coverage** | **Fails the 100% gate** — see §4 |
+| Browser suite | Cannot run: Playwright browsers not installed |
+
+Run everything except coverage with:
+
+```bash
+composer lint && bun run test:types && php artisan test --compact --testsuite=Unit,Feature
+```
+
+## 2. Phases
 
 | Phase | Scope | State |
 |---|---|---|
-| **1. Foundation** | Roles, member registry, effective-dated settings, audit log | ✅ Built and verified (202 tests, 100% coverage) |
-| **2. Contributions** | Periods, obligations, payments, verification, evidence, ledger | ✅ Built; formatting and tests run by the club |
-| **3. Governance** | Meetings, attendance, minutes, proposals, votes, actions | ⚠️ Built, **not yet verified** — see §2 |
-| **4. Finance & Reports** | Expenses, external accounts, reconciliation, monthly close, dashboards, monthly report | ⚠️ Built, **not verified**; controller tests and exports outstanding — see §7 |
-| **5. Pilot & hardening** | UAT, security review, backup restore, mobile QA, training | ⬜ Not started |
+| **1. Foundation** | Roles, member registry, effective-dated settings, audit log | ✅ Built and verified |
+| **2. Contributions** | Periods, obligations, payments, verification, evidence, ledger | ✅ Built and verified |
+| **3. Governance** | Meetings, attendance, minutes, proposals, votes, actions | ✅ Built and verified |
+| **4. Finance & Reports** | Expenses, external accounts, reconciliation, monthly close, dashboards, monthly report | ✅ Built and verified; controller tests outstanding (§4) |
+| **5. Pilot & hardening** | UAT, security review, backup restore, mobile QA, training, deployment | ⬜ Not started |
+
+## 3. Authorisation model (rebuilt 5 August)
+
+The application no longer decides access by role name. Three layers, and the
+distinction matters when adding anything new:
+
+1. **Permissions** — `App\Enums\Permission`, a fixed catalogue in code. Policies
+   reference these and nothing else. They stay in code because policies need
+   something stable to point at.
+2. **System roles** — rows in the Spatie tables. Fully CRUD-able by an
+   administrator, with permissions attached at creation. `RolePermissionSeeder`
+   seeds the catalogue plus six default bundles reproducing the behaviour the
+   app had when roles were an enum.
+3. **Club positions** — the elected offices (Chairperson, Treasurer, Chief
+   Whip…). A *title the membership voted for*, not a permission. Currently a
+   single enum column on `members`; §6 replaces that.
+
+**Administrators bypass every policy** via `Gate::before`, with one deliberate
+exception: abilities whose subject is a `Role`. Without that exception the
+structural guards on the administrator role (it can never be renamed or
+deleted — `Gate::before` itself depends on it existing) would be skipped and
+fail later as a 500 rather than a clean 403.
+
+**Maker-checker rules are deliberately not permissions.** "You may not verify a
+payment you recorded", "not the member who requested the expense", "not the
+treasurer who prepared the reconciliation" are row-level rules enforced inside
+the Actions. No permission grant and no administrator bypass can switch them
+off. Keep it that way.
+
+Likewise `ProposalPolicy::vote`: eligibility comes from the electorate frozen
+when voting opened, so no role and no bypass can add a voter to an open ballot.
+
+## 4. The coverage gate fails
+
+`pest --coverage --exactly=100.0` will not pass. Missing feature tests for:
+
+- `ExpenseController`, `ExpenseApprovalController`, `ExpensePaymentController`,
+  `ExpenseVerificationController`
+- `ReconciliationController`, `ReconciliationReviewController`,
+  `ReconciliationItemController`, `ReconciliationRejectionController`
+- `ExternalAccountController`, `DashboardController`, `MonthlyReportController`
+
+The Actions behind all of these *are* covered
+(`ExpenseWorkflowTest`, `ReconciliationWorkflowTest`) — it is the HTTP layer and
+its permission boundaries that have no tests.
+
+Watch for the two traps this repo sets: an unreachable branch fails the gate
+(prefer `firstOrFail()` over a null-check-and-throw the policy already
+guarantees), and a `->map()` closure over a collection no test populates counts
+as uncovered.
+
+## 5. Seeded data is placeholder
+
+`MusuwaNationSeeder` creates the real 20-person roll, opens every month since
+1 January 2026, settles all but the current one, leaves three members in
+arrears, and takes one expense through to verification. Before any real use:
+
+- **Every account shares the password `password`.**
+- Emails are on the reserved `.test` TLD and can never receive mail, so password
+  reset will not work. The exception is `lemi@gmail.com`.
+- Phone numbers are sequential placeholders.
+- **Unresolved:** the earlier leadership list named *Ndyomugabe Michael* as
+  Assistant General Secretary, but the active roll has *Michael Nuwagaba* and no
+  Ndyomugabe. The seeder uses Michael Nuwagaba. If they are different people the
+  roll is missing someone.
 
 ---
 
-## 2. Verify Phase 3 before relying on it
+# Part two — Plan forward
 
-Phase 3 was written but never executed. Run the gates and expect fixes:
+Six milestones. Each has an exit condition; do them in order, because each
+removes an obstacle for the next.
+
+## M1 — Elected and transferable positions
+
+**Why first:** it is the last piece of the governance model, and it is a data
+migration. Do it while the schema is small and the seeded data is disposable.
+
+Today `members.position` is one nullable enum column: an office is a fact about
+a member, with no history and no way to hand it over.
+
+Build:
+
+- `position_holdings` — `member_id`, `position`, `held_from`, `held_to` (null
+  while current), `elected_via_proposal_id`.
+- A **data migration** moving the existing column into the new table without
+  losing the seeded leadership, then dropping the column.
+- `Member::currentPosition()` reading the open holding.
+- `TransferPosition` — closes the incumbent's holding and opens the successor's
+  in one transaction, refusing to leave two people in one office or to leave a
+  gap unrecorded.
+- Wire it to Phase 3: an election is a proposal whose passing triggers the
+  transfer. `Permission::PositionsManage` already exists for the manual path.
+- A positions screen showing who holds what, with history.
+
+**Exit:** an office can be transferred by a passed vote, and last year's holder
+is still visible in the record.
+
+## M2 — Restore the coverage gate
+
+**Why second:** every later milestone adds code, and the longer the gate stays
+red the more untested surface accumulates behind it.
+
+Write the feature tests listed in §4 — one per permission boundary per route,
+matching the pattern in `PaymentControllerTest`. Then confirm:
 
 ```bash
-php artisan wayfinder:generate --with-form
-php artisan migrate:fresh --seed
-composer lint
-bun run test:types
-php artisan test --compact --testsuite=Unit,Feature
+XDEBUG_MODE=coverage vendor/bin/pest --parallel --coverage --exactly=100.0 --testsuite=Unit,Feature
 ```
 
-`migrate:fresh --seed` is mandatory — `SettingSeeder` gained `quorum_percent`
-and `approval_percent`, and `OpenProposalVoting` throws without them.
+**Exit:** `composer test` passes end to end, Browser suite excepted.
 
----
+## M3 — Correction paths
 
-## 3. The blocker: members created in the app cannot get a login
+**Why third:** the club will make mistakes, and right now several of them are
+unfixable in the application. This is the largest remaining *functional* gap.
 
-**This remains the most important gap**, though the seeder now softens it.
-Self-registration is switched off (routes commented out in `routes/web.php`),
-and nothing replaces it. Today:
+- **Payment reversal.** `PaymentStatus::Reversed` exists and is unimplemented.
+  A reversal must unwind `payment_allocations`, restore each obligation's
+  `amount_paid` and status, reference the original record and capture a reason.
+- **Waive or cancel an obligation.** `ObligationStatus::Waived` and `Cancelled`
+  exist with no route. Requires authority and audit evidence.
+- **Adjustments after lock.** A locked month is correctly immutable, but the
+  "controlled adjustment" the proposal calls for does not exist.
+- **Withdraw a proposal / cancel a meeting.** Both enum cases exist, neither has
+  a route.
+- **Minutes corrections.** Confirmed minutes are immutable and there is no
+  corrective mechanism. Decide the policy.
 
-- The 20 seeded founding members **do** have logins (see §3.1).
-- But a member created afterwards through the Members screen has
-  `user_id = null`: they cannot log in, vote, or see their ledger, and
-  `AssignMemberRole` throws a `RuntimeException` for them.
+**Exit:** every state in every status enum is reachable, or documented as
+deliberately unreachable.
 
-**What is needed:** an invitation flow — Secretary creates the member, the
-system emails a signed, expiring invite link, the member sets their own
-password, and the `User` is linked to the `Member` on acceptance.
+## M4 — Automation and notifications
 
-Related: decide whether officers can deactivate a login without exiting the
-member.
+**Why fourth:** it depends on M3, because a notification that fires on a state
+nobody can correct is worse than none.
 
-### 3.1 Seeded credentials are placeholders
+- **Overdue sweep.** `grace_ends_on` is stored but nothing acts on it. Needs a
+  scheduled command, and a decision: add `ObligationStatus::Overdue`, or derive
+  overdue from the grace date at read time.
+- **Notifications** — nothing notifies anyone of anything today. The
+  `notifications` table from the data model does not exist. Cover: period
+  opened, deadline approaching, obligation overdue, payment verified/rejected,
+  meeting scheduled, minutes published, vote opened and closing, action
+  assigned/overdue, monthly report published.
+- Nothing currently dispatches to the queue, though the worker runs under
+  `composer dev`.
 
-`MusuwaNationSeeder` creates the full founding roll of twenty with working
-logins so the app is usable immediately. Before any real pilot:
+**Exit:** a member learns they are in arrears without anyone telling them.
 
-- **Every account shares the password `password`.** Change them.
-- Addresses use the reserved `.test` TLD (e.g.
-  `ssekwayama.fredrick.01@musuwanation.test`) and can never receive mail, so
-  password reset will not work. Collect real addresses. The exception is the
-  treasurer, seeded as `lemi@gmail.com` on request.
-- Phone numbers are sequential placeholders (`+256700000001`…).
-- Members 11–20 are named "Member NN (placeholder)" — rename them in the
-  Members screen as the real roll is confirmed.
+## M5 — Reports and exports
 
-Positions are seeded from the club's elected leadership, and permission roles
-are mapped from them so maker-checker works immediately: the Assistant
-Treasurer holds `treasurer` while the Chief Whips hold `financial-verifier`, so
-whoever records a payment is never the one who verifies it. **That mapping is
-an assumption** — if the club wants verification to sit elsewhere, change
-`MusuwaNationSeeder::LEADERSHIP`.
+The monthly transparency report exists on screen. Still missing from §16 of the
+proposal: member statement, contribution collection, arrears ageing, expense
+report, governance report, audit export — and there is **no CSV or PDF output
+anywhere**. Receipts are not produced when a payment is verified.
 
----
+Also outstanding: the reconciliation screen has no form to add or resolve a
+difference item, though the action, request, controller and routes all exist.
+Until that is built, a reconciliation *with* a difference cannot be confirmed
+through the UI.
 
-## 4. Cross-cutting gaps
+**Exit:** the club can hand a member a statement and a monthly report without
+opening the application.
 
-### Notifications — not started
-Nothing notifies anyone of anything. The proposal calls for in-app plus optional
-email on: period opened, deadline approaching, obligation overdue, payment
-verified/rejected, meeting scheduled, agenda/minutes published, vote opened and
-closing, action assigned/overdue, monthly report published. The `notifications`
-table from the data model does not exist yet.
+## M6 — Pilot and hardening
 
-### Privacy gating of member data
-`MemberPolicy::view` returns `true` for every authenticated member, so anyone can
-see any member's phone number and emergency contact. The proposal asks for
-contact details to be permission-restricted. Partial mitigation is in place —
-`MemberController::show` hides the linked `User` record and only sends `email` to
-officers — but the underlying policy decision has not been made. **Needs a
-governance decision, not just code.**
+Nothing here has been started, and none of it is optional before real money is
+tracked.
 
-### Concurrency hardening
-`VerifyPayment` guards against double verification with a status check inside a
-transaction, but takes no row lock. Under SQLite this is fine; if the club moves
-to MySQL/Postgres with concurrent officers, add `lockForUpdate()` on the payment
-and obligations. The proposal explicitly asks for concurrency tests preventing
-double verification and duplicate allocation.
-
-### Scheduler and queue
-No scheduled commands exist. At minimum an overdue sweep (§5) and later the
-report generation jobs. The queue worker runs via `composer dev` but nothing
-dispatches to it.
-
----
-
-## 5. Phase 2 remainder (Contributions)
-
-| Item | Detail |
-|---|---|
-| **Overdue marking** | `grace_ends_on` is stored on the period but nothing moves obligations to an overdue state after it passes. Needs a scheduled command. `ObligationStatus` currently has no `Overdue` case — add it, or derive overdue from the grace date at read time and document the choice. |
-| **Closing a period** | `ContributionPeriodStatus::Closed` exists in the enum with no action or route to reach it. Closing should stop new obligations and feed the monthly reconciliation. |
-| **Payment reversals** | `PaymentStatus::Reversed` exists and is unimplemented. Correcting a verified payment is impossible today. Per the acceptance criteria a correction must reference the original record and capture a reason — reversal must unwind `payment_allocations` and restore obligation `amount_paid`/status. |
-| **Receipts** | No receipt is produced when a payment is verified. |
-| **Arrears view** | Outstanding amounts are visible per member and per period, but there is no arrears report listing who owes what, aged. |
-| **Waive / cancel an obligation** | `ObligationStatus::Waived` and `Cancelled` exist with no route to set them. Requires authority and audit evidence per the business rules. |
-
----
-
-## 6. Phase 3 remainder (Governance)
-
-| Item | Detail |
-|---|---|
-| **Resolutions register** | Deferred by design. A passed proposal plus confirmed minutes currently serve as the decision record. A dedicated `resolutions` table would give decisions a stable reference. |
-| **`resolution_reference` is free text** | `membership_status_histories.resolution_reference` and `expenses` reference resolutions as strings. Once a resolutions register exists these should become real foreign keys. |
-| **Cancelling a meeting** | `MeetingStatus::Cancelled` exists; no route sets it. |
-| **Withdrawing a proposal** | `ProposalStatus::Withdrawn` exists; no route sets it. |
-| **Minutes corrections** | Confirmed minutes are correctly immutable, but there is no corrective mechanism — currently the only path is a new meeting record. Decide the correction policy. |
-| **Attendance for non-active members** | Only active members appear on the attendance screen. A member suspended mid-year who attends cannot be recorded. |
-
----
-
-## 7. Phase 4 remainder (Finance & Reports)
-
-**Built (unverified):** expenses with three-way separation of duties, external
-accounts with masked identifiers, reconciliation with derived expected balance,
-difference items, rejection and month lock, a combined member/officer
-dashboard, and the monthly transparency report.
-
-Still outstanding:
-
-| Item | Detail |
-|---|---|
-| **Phase 4 controller tests** | The Actions are covered (`ExpenseWorkflowTest`, `ReconciliationWorkflowTest`) but no feature tests exist for the expense, reconciliation, item, rejection, external-account, dashboard or monthly-report controllers. The 100% coverage gate **will fail** until these are written. This is the largest single piece of remaining Phase 4 work. |
-| **Reconciliation items UI** | The action, request, controller and routes exist (`reconciliation-item.store` / `.update`), but the reconciliation screen has no form to add or resolve an item yet. `ConfirmReconciliation` refuses to confirm while any item is unresolved, so a reconciliation with a difference is currently blocked from the UI side. |
-| **Statement attachment** | The proposal asks for the external statement to be attached to the reconciliation. Only expense and payment evidence upload exists. |
-| **Adjustments after lock** | A locked month is correctly immutable, but the "controlled adjustment" path the proposal calls for does not exist. |
-| **Remaining reports and exports** | The monthly transparency report is built as an on-screen report. Still missing from §16 of the proposal: member statement, contribution collection, arrears ageing, expense report, governance report, audit export — and there is no CSV or PDF output anywhere. |
-| **Budgets** | Not started, and not scheduled.
-
----
-
-## 7.1 Requested but not built: elections, user and role management
-
-Four requirements were added on 5 August 2026. None are built yet. They are
-recorded here in enough detail to start from, and they are **larger than they
-look** — the third one in particular changes how authorisation works.
-
-### a. Positions must be elected and transferable
-
-Today `members.position` is a single nullable enum column: an office is a fact
-about a member, with no history and no way to hand it over.
-
-**Needed:** a `position_holdings` table — `member_id`, `position`, `held_from`,
-`held_to` (null while current), and `elected_via_proposal_id` linking to the
-vote that put them there. `Member::currentPosition()` reads the open holding.
-A `TransferPosition` action closes the incumbent's holding and opens the
-successor's inside one transaction, refusing to leave two people in one office.
-Phase 3's proposals and votes already provide the election mechanism — an
-election is a proposal whose passing triggers the transfer.
-
-Migrating the existing column into the new table is a data migration, not just
-a schema one.
-
-### b. User management
-
-**Needed:** a screen listing members, showing who does and does not have a
-login, with an action to create one for a member and assign their role. This is
-the practical half of the §3 blocker: it does not need email invitations to be
-useful, since an officer can create the account and hand over the password —
-though invitations remain the better answer.
-
-Must respect: one user per member (`members.user_id` is unique), and creating a
-login should be audited like every other sensitive action.
-
-### c. Role management with permissions — **this is a refactor, not a feature**
-
-The request is CRUD for roles with permissions attached at creation, plus a
-`RolePermissionSeeder`.
-
-The obstacle: `App\Enums\ClubRole` is a hard-coded enum, and **every policy in
-the application checks role names against it** (`$user->hasRole(ClubRole::
-Administrator->value)`). Roles cannot become user-editable while policies ask
-"is this person an administrator?" — the moment somebody creates a "Deputy
-Treasurer" role, no policy grants it anything.
-
-The correct shape:
-
-1. Define a fixed **permission** catalogue (`members.create`,
-   `payments.verify`, `expenses.approve`, `reconciliation.confirm`, …) — these
-   stay in code, because policies must reference something stable.
-2. Rewrite every policy to check `$user->can('payments.verify')` instead of
-   `hasRole(...)`.
-3. Make roles data: CRUD screens, with permissions attached at creation.
-4. `RolePermissionSeeder` seeds the catalogue plus the default club roles as
-   starting bundles.
-
-Keep the maker-checker rules where they are. They are **not** permissions —
-"cannot verify a payment you recorded" is a row-level rule enforced in the
-Action, and no permission grant should ever be able to switch it off.
-
-Do (c) before (b), or the user management screen will be built against an
-authorisation model that is about to change.
-
----
-
-## 8. Phase 5 — Pilot and hardening
-
-None of this has been started.
-
-- **Browser tests do not run.** The `Browser` suite hangs because Playwright
-  browsers are not installed (`bunx playwright install`). `composer test`
-  therefore cannot complete — use `--testsuite=Unit,Feature`.
+- **Replace the seeded credentials** (§5) — real emails, real phone numbers,
+  individual passwords.
+- **Privacy decision.** `MemberPolicy::view` returns `true` for everyone, so any
+  member can see any member's phone and emergency contact. The proposal asks for
+  contact details to be permission-gated. Partial mitigation is in place
+  (`MemberController::show` hides the linked `User` and only sends `email` to
+  officers) but the underlying rule is a governance decision, not a code one.
+- **Concurrency.** `VerifyPayment` guards double verification with a status check
+  inside a transaction but takes no row lock. Fine on SQLite; add
+  `lockForUpdate()` before moving to MySQL/Postgres with concurrent officers.
+- **Browser tests.** `bunx playwright install`, then the Browser suite can run
+  and `composer test` completes.
 - Security review: rate limiting beyond login, session settings, file-type
-  validation hardening, dependency audit (`composer audit` currently reports
-  advisories).
-- Backup and restore: no backup configured, and the restore has never been
-  tested. The proposal is explicit that untested backups do not count.
-- Mobile QA across the real screens on a phone.
-- UAT scripts per role, and training for the officers.
+  validation, `composer audit` (currently reports advisories).
+- Backups: none configured, restore never tested. Untested backups do not count.
+- Mobile QA on a real phone; UAT per role; officer training.
 - Deployment: HTTPS, secrets, queue worker, scheduler, health checks, error
   monitoring. Nothing is deployed.
 
+**Exit:** the founding members sign off a pilot release.
+
 ---
 
-## 9. Technical debt and decisions taken
+# Reference
 
-- **Registration is commented out, not deleted.** `UserController::create`/
-  `store`, the register routes, `user/create.tsx` and the registration tests are
-  all commented with restore instructions. `CreateUserRequest` is kept intact
-  and covered by `tests/Unit/Requests/CreateUserRequestTest.php` because the
-  Pest `laravel` arch preset requires every FormRequest to have `rules()`.
-- **`nav-main.tsx` and `nav-footer.tsx` are dead** since the sidebar was rebuilt
-  on shadcn `sidebar-03`. Safe to delete.
+## Technical debt and decisions taken
+
+- **Self-registration is commented out, not deleted.** `UserController::create`/
+  `store`, the register routes, `user/create.tsx` and the registration tests all
+  carry restore instructions. `CreateUserRequest` is kept intact and tested
+  because the Pest `laravel` arch preset requires every FormRequest to have
+  `rules()`. Members now get logins through the user management screen instead.
+- **`database/seeders/RoleSeeder.php` is dead** — superseded by
+  `RolePermissionSeeder`, all references repointed. Safe to delete.
+- **`ClubRole` is no longer load-bearing.** It survives only to name the default
+  seeded roles and in a few tests. Authorisation goes through permissions.
 - **SSR is disabled for tests** via `INERTIA_SSR_ENABLED=false` in `phpunit.xml`.
-  Without it every full-page test 500s. This was a pre-existing fault.
-- **Money is stored as whole UGX integers.** No minor units, no decimals. If the
-  club ever needs cents this is a migration.
-- **100% line coverage is enforced.** Unreachable branches fail the build — the
-  usual culprits are null checks a policy already guarantees, and `->map()`
-  closures over collections no test populates.
+  Without it every full-page test 500s.
+- **Money is whole UGX integers.** No minor units. Adding cents is a migration.
 - **`package.json` must not be bumped casually.** `composer require` triggers
   this starter kit's `post-update-cmd`, which runs `npm-check-updates -u` and
   rewrites every frontend dependency. Revert that hunk after adding any PHP
   package.
+- **shadcn blocks overwrite files.** `sidebar-03` and `dashboard-01` each
+  replaced `app-sidebar.tsx` (and `dashboard-01` also `dashboard.tsx`) with
+  their sample data. Their nav components ship plain `<a href>` tags that break
+  Inertia navigation — convert to `Link` after any block install.
 
----
+## Later phases (not scheduled)
 
-## 10. Later phases (not scheduled)
-
-Multi-club tenancy · Mobile Money and bank statement integration with automated
-matching · investment portfolio, capital calls, unit ownership and valuations ·
-member loans (needs separate legal, risk and accounting design) · budgeting and
-procurement · native mobile app with offline capture · electronic signatures ·
-advanced analytics and an external audit workspace.
+Multiple independent clubs with tenant isolation · Mobile Money and bank
+statement integration with automated matching · investment portfolio, capital
+calls, unit ownership and valuations · member loans (needs separate legal, risk
+and accounting design) · budgeting and procurement · native mobile app with
+offline capture · electronic signatures · advanced analytics and an external
+audit workspace.

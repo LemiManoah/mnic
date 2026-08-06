@@ -9,8 +9,9 @@ use App\Enums\Permission;
 use App\Models\Expense;
 use App\Models\Member;
 use App\Models\User;
+use App\Policies\Concerns\EnforcesBusinessRules;
 
-final class ExpensePolicy
+final class ExpensePolicy implements EnforcesBusinessRules
 {
     public function viewAny(): bool
     {

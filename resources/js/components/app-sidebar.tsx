@@ -1,22 +1,35 @@
 import { Link, usePage } from '@inertiajs/react';
-import { GalleryVerticalEnd } from 'lucide-react';
+import {
+    IconCalendarEvent,
+    IconCash,
+    IconChecklist,
+    IconDashboard,
+    IconFileDescription,
+    IconGavel,
+    IconHistory,
+    IconInnerShadowTop,
+    IconKey,
+    IconReceipt,
+    IconReportMoney,
+    IconScale,
+    IconSettings,
+    IconUserShield,
+    IconUsers,
+} from '@tabler/icons-react';
 import type * as React from 'react';
+import { NavDocuments } from '@/components/nav-documents';
+import { NavMain } from '@/components/nav-main';
+import { NavSecondary } from '@/components/nav-secondary';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
-    SidebarGroup,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSub,
-    SidebarMenuSubButton,
-    SidebarMenuSubItem,
-    SidebarRail,
 } from '@/components/ui/sidebar';
-import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
 import { index as actionItemIndex } from '@/routes/action-item';
 import { index as auditLogIndex } from '@/routes/audit-log';
@@ -32,128 +45,100 @@ import { index as reconciliationIndex } from '@/routes/reconciliation';
 import { index as settingIndex } from '@/routes/setting';
 import { index as systemRoleIndex } from '@/routes/system-role';
 import { index as userManagementIndex } from '@/routes/user-management';
-import type { NavItem } from '@/types';
-
-type NavSection = {
-    title: string;
-    items: NavItem[];
-};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { auth } = usePage().props;
-    const { isCurrentOrParentUrl } = useCurrentUrl();
 
     const isAdministrator = auth.roles.includes('administrator');
     const isSecretary = auth.roles.includes('secretary');
     const isTreasurer = auth.roles.includes('treasurer');
     const isFinancialVerifier = auth.roles.includes('financial-verifier');
 
-    const administrationItems: NavItem[] = [
+    // Day-to-day club work, in the order a member is likely to need it.
+    const navMain = [
+        { title: 'Dashboard', url: dashboard().url, icon: IconDashboard },
+        { title: 'Members', url: memberIndex().url, icon: IconUsers },
+        {
+            title: 'Contribution periods',
+            url: contributionPeriodIndex().url,
+            icon: IconCalendarEvent,
+        },
+        { title: 'Payments', url: paymentIndex().url, icon: IconCash },
+        { title: 'Expenses', url: expenseIndex().url, icon: IconReceipt },
+        {
+            title: 'Reconciliation',
+            url: reconciliationIndex().url,
+            icon: IconScale,
+        },
+    ];
+
+    // Governance and the records it produces.
+    const documents = [
+        { name: 'Meetings', url: meetingIndex().url, icon: IconCalendarEvent },
+        { name: 'Proposals', url: proposalIndex().url, icon: IconGavel },
+        { name: 'Actions', url: actionItemIndex().url, icon: IconChecklist },
+        {
+            name: 'Monthly reports',
+            url: monthlyReportIndex().url,
+            icon: IconReportMoney,
+        },
+    ];
+
+    // Administration, pinned to the bottom and gated by role.
+    const navSecondary = [
         ...(isAdministrator
             ? [
                   {
-                      title: 'System Roles',
-                      href: systemRoleIndex(),
-                  } satisfies NavItem,
+                      title: 'Club settings',
+                      url: settingIndex().url,
+                      icon: IconSettings,
+                  },
                   {
-                      title: 'Login Accounts',
-                      href: userManagementIndex(),
-                  } satisfies NavItem,
+                      title: 'System roles',
+                      url: systemRoleIndex().url,
+                      icon: IconUserShield,
+                  },
+                  {
+                      title: 'Login accounts',
+                      url: userManagementIndex().url,
+                      icon: IconKey,
+                  },
               ]
             : []),
-        ...(isAdministrator
+        ...(isAdministrator || isTreasurer || isFinancialVerifier
             ? [
                   {
-                      title: 'Club Settings',
-                      href: settingIndex(),
-                  } satisfies NavItem,
+                      title: 'External accounts',
+                      url: externalAccountIndex().url,
+                      icon: IconFileDescription,
+                  },
               ]
             : []),
         ...(isAdministrator || isSecretary
             ? [
                   {
-                      title: 'Audit Log',
-                      href: auditLogIndex(),
-                  } satisfies NavItem,
-              ]
-            : []),
-    ];
-
-    const navMain: NavSection[] = [
-        {
-            title: 'Overview',
-            items: [{ title: 'Dashboard', href: dashboard() }],
-        },
-        {
-            title: 'Club',
-            items: [{ title: 'Members', href: memberIndex() }],
-        },
-        {
-            title: 'Contributions',
-            items: [
-                { title: 'Periods', href: contributionPeriodIndex() },
-                { title: 'Payments', href: paymentIndex() },
-            ],
-        },
-        {
-            title: 'Governance',
-            items: [
-                { title: 'Meetings', href: meetingIndex() },
-                { title: 'Proposals', href: proposalIndex() },
-                { title: 'Actions', href: actionItemIndex() },
-            ],
-        },
-        {
-            title: 'Finance',
-            items: [
-                { title: 'Expenses', href: expenseIndex() },
-                { title: 'Reconciliation', href: reconciliationIndex() },
-                { title: 'Monthly reports', href: monthlyReportIndex() },
-            ],
-        },
-        {
-            title: 'Finance',
-            items: [
-                { title: 'Expenses', href: expenseIndex() },
-                { title: 'Reconciliation', href: reconciliationIndex() },
-                ...(isAdministrator || isTreasurer || isFinancialVerifier
-                    ? [
-                          {
-                              title: 'External accounts',
-                              href: externalAccountIndex(),
-                          } satisfies NavItem,
-                      ]
-                    : []),
-            ],
-        },
-        ...(administrationItems.length > 0
-            ? [
-                  {
-                      title: 'Administration',
-                      items: administrationItems,
-                  } satisfies NavSection,
+                      title: 'Audit log',
+                      url: auditLogIndex().url,
+                      icon: IconHistory,
+                  },
               ]
             : []),
     ];
 
     return (
-        <Sidebar {...props}>
+        <Sidebar collapsible="offcanvas" {...props}>
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton
+                            asChild
+                            className="data-[slot=sidebar-menu-button]:p-1.5!"
+                        >
                             <Link href={dashboard()} prefetch>
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <GalleryVerticalEnd className="size-4" />
-                                </div>
-                                <div className="flex flex-col gap-0.5 leading-none">
-                                    <span className="font-medium">
-                                        Musuwa Nation
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        Investment Club
-                                    </span>
-                                </div>
+                                <IconInnerShadowTop className="size-5!" />
+                                <span className="text-base font-semibold">
+                                    Musuwa Nation
+                                </span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -161,54 +146,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
 
             <SidebarContent>
-                <SidebarGroup>
-                    <SidebarMenu>
-                        {navMain.map((section) => (
-                            <SidebarMenuItem key={section.title}>
-                                <SidebarMenuButton asChild>
-                                    <Link
-                                        href={section.items[0].href}
-                                        className="font-medium"
-                                        prefetch
-                                    >
-                                        {section.title}
-                                    </Link>
-                                </SidebarMenuButton>
-
-                                {section.items.length > 0 ? (
-                                    <SidebarMenuSub>
-                                        {section.items.map((item) => (
-                                            <SidebarMenuSubItem
-                                                key={item.title}
-                                            >
-                                                <SidebarMenuSubButton
-                                                    asChild
-                                                    isActive={isCurrentOrParentUrl(
-                                                        item.href,
-                                                    )}
-                                                >
-                                                    <Link
-                                                        href={item.href}
-                                                        prefetch
-                                                    >
-                                                        {item.title}
-                                                    </Link>
-                                                </SidebarMenuSubButton>
-                                            </SidebarMenuSubItem>
-                                        ))}
-                                    </SidebarMenuSub>
-                                ) : null}
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                </SidebarGroup>
+                <NavMain items={navMain} />
+                <NavDocuments items={documents} />
+                {navSecondary.length > 0 && (
+                    <NavSecondary items={navSecondary} className="mt-auto" />
+                )}
             </SidebarContent>
 
             <SidebarFooter>
-                <NavUser />
+                <NavUser
+                    user={{
+                        name: auth.user.name,
+                        email: auth.user.email,
+                        avatar: auth.user.avatar ?? '',
+                    }}
+                />
             </SidebarFooter>
-
-            <SidebarRail />
         </Sidebar>
     );
 }

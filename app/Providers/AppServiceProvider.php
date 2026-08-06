@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Enums\ClubRole;
 use App\Models\User;
+use App\Policies\Concerns\EnforcesBusinessRules;
 use App\Policies\SystemRolePolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -21,31 +22,35 @@ final class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         /**
-         * Administrators bypass every policy check.
+         * Administrators bypass permission checks, but never business rules.
          *
-         * This covers authorisation only. The maker-checker rules live inside
-         * the Actions — an administrator still cannot verify a payment they
-         * recorded, or approve their own expense; those attempts fail in the
-         * Action rather than at the gate.
+         * The bypass exists so an administrator is never locked out by a
+         * missing grant. It must not extend to policies that also decide on
+         * state — whether a payment is still awaiting review, whether a month
+         * is locked, whether this member already voted — because those answers
+         * are the same for everybody. Policies marked EnforcesBusinessRules are
+         * therefore left to run, and administrators pass them on the permissions
+         * they already hold.
+         *
+         * Maker-checker rules are enforced a second time inside the Actions, so
+         * even a mistake here cannot let anyone verify their own payment.
          */
         Gate::before(function (User $user, string $ability, array $arguments = []): ?bool {
             if (! $user->hasRole(ClubRole::Administrator->value)) {
                 return null;
             }
 
-            // System roles are the one exception to the bypass. Their policy
-            // carries structural guards — the administrator role can never be
-            // renamed or deleted, because Gate::before itself depends on it —
-            // and a bypass would skip those and fail later as a 500 instead of
-            // a clean 403. Administrators hold every permission explicitly
-            // anyway, so nothing they should be able to do is lost.
             $subject = $arguments[0] ?? null;
 
-            if ($subject instanceof Role || $subject === Role::class) {
-                return null;
+            // Abilities checked without a subject — Gate::authorize('users.manage')
+            // and the like — are pure permission questions, so bypass them.
+            if (! is_object($subject) && ! is_string($subject)) {
+                return true;
             }
 
-            return true;
+            return Gate::getPolicyFor($subject) instanceof EnforcesBusinessRules
+                ? null
+                : true;
         });
 
         // Spatie's Role lives outside App\Models, so convention-based policy

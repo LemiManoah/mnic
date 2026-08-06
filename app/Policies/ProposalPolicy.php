@@ -11,8 +11,9 @@ use App\Models\Proposal;
 use App\Models\ProposalEligibleVoter;
 use App\Models\User;
 use App\Models\Vote;
+use App\Policies\Concerns\EnforcesBusinessRules;
 
-final class ProposalPolicy
+final class ProposalPolicy implements EnforcesBusinessRules
 {
     public function viewAny(): bool
     {

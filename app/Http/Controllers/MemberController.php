@@ -17,19 +17,47 @@ use App\Models\MemberObligation;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final readonly class MemberController
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Member::class);
 
+        $search = $request->string('search')->trim()->value();
+        $status = $request->string('status')->value();
+
         return Inertia::render('member/index', [
-            'members' => Member::query()->latest()->paginate(20),
+            'members' => Member::query()
+                ->when($search !== '', fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $inner): Builder => $inner
+                        ->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('member_number', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")))
+                ->when($status !== '', fn (Builder $query): Builder => $query
+                    ->where('status', $status))
+                ->latest()
+                ->paginate(20)
+                // Keep the filters on the pagination links, otherwise page two
+                // silently drops them.
+                ->withQueryString(),
+            'filters' => [
+                'search' => $search === '' ? null : $search,
+                'status' => $status === '' ? null : $status,
+            ],
+            'statusOptions' => array_map(
+                static fn (MemberStatus $case): array => [
+                    'value' => $case->value,
+                    'label' => $case->label(),
+                ],
+                MemberStatus::cases(),
+            ),
         ]);
     }
 

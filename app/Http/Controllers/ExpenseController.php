@@ -6,28 +6,45 @@ namespace App\Http\Controllers;
 
 use App\Actions\RequestExpense;
 use App\Enums\ExpenseCategory;
+use App\Enums\ExpenseStatus;
 use App\Http\Requests\RequestExpenseRequest;
 use App\Models\Expense;
 use App\Models\ExternalAccount;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final readonly class ExpenseController
 {
-    public function index(#[CurrentUser] User $user): Response
+    public function index(Request $request, #[CurrentUser] User $user): Response
     {
         Gate::authorize('viewAny', Expense::class);
+
+        $search = $request->string('search')->trim()->value();
+        $status = $request->string('status')->value();
+        $category = $request->string('category')->value();
 
         return Inertia::render('expense/index', [
             'expenses' => Expense::query()
                 ->with(['requestedByMember', 'approvedByMember', 'verifiedByMember'])
+                ->when($search !== '', fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $inner): Builder => $inner
+                        ->where('reference', 'like', "%{$search}%")
+                        ->orWhere('purpose', 'like', "%{$search}%")
+                        ->orWhere('payee', 'like', "%{$search}%")))
+                ->when($status !== '', fn (Builder $query): Builder => $query
+                    ->where('status', $status))
+                ->when($category !== '', fn (Builder $query): Builder => $query
+                    ->where('category', $category))
                 ->latest()
                 ->paginate(20)
+                ->withQueryString()
                 ->through(fn (Expense $expense): array => [
                     'id' => $expense->id,
                     'reference' => $expense->reference,
@@ -46,6 +63,18 @@ final readonly class ExpenseController
                     'can_verify' => $user->can('verify', $expense),
                 ]),
             'canRequest' => $user->can('create', Expense::class),
+            'filters' => [
+                'search' => $search === '' ? null : $search,
+                'status' => $status === '' ? null : $status,
+                'category' => $category === '' ? null : $category,
+            ],
+            'statusOptions' => array_map(
+                static fn (ExpenseStatus $case): array => [
+                    'value' => $case->value,
+                    'label' => $case->label(),
+                ],
+                ExpenseStatus::cases(),
+            ),
             'categoryOptions' => array_map(
                 static fn (ExpenseCategory $category): array => [
                     'value' => $category->value,

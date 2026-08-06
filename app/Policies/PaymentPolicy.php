@@ -9,8 +9,9 @@ use App\Enums\Permission;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\User;
+use App\Policies\Concerns\EnforcesBusinessRules;
 
-final class PaymentPolicy
+final class PaymentPolicy implements EnforcesBusinessRules
 {
     public function viewAny(): bool
     {

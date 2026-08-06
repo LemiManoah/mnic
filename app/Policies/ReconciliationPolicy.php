@@ -9,8 +9,9 @@ use App\Enums\ReconciliationStatus;
 use App\Models\Member;
 use App\Models\Reconciliation;
 use App\Models\User;
+use App\Policies\Concerns\EnforcesBusinessRules;
 
-final class ReconciliationPolicy
+final class ReconciliationPolicy implements EnforcesBusinessRules
 {
     public function viewAny(): bool
     {
