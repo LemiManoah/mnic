@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\ClubRole;
+use App\Enums\Permission;
 use App\Models\User;
 
 final class MeetingPolicy
@@ -19,23 +19,13 @@ final class MeetingPolicy
         return true;
     }
 
-    /**
-     * The secretary keeps the meeting record; the chair may convene.
-     */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole([
-            ClubRole::Secretary->value,
-            ClubRole::InterimChairperson->value,
-            ClubRole::Administrator->value,
-        ]);
+        return $user->can(Permission::MeetingsCreate->value);
     }
 
     public function manageMinutes(User $user): bool
     {
-        return $user->hasAnyRole([
-            ClubRole::Secretary->value,
-            ClubRole::Administrator->value,
-        ]);
+        return $user->can(Permission::MeetingsManageMinutes->value);
     }
 }

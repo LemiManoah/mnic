@@ -14,14 +14,14 @@ use App\Models\Member;
 use App\Models\MembershipStatusHistory;
 use App\Models\Payment;
 use App\Models\User;
-use Database\Seeders\MusuwaNationSeeder;
-use Database\Seeders\RoleSeeder;
 use Carbon\CarbonImmutable;
+use Database\Seeders\MusuwaNationSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Support\Facades\Hash;
 
 beforeEach(function (): void {
-    (new RoleSeeder)->run();
+    (new RolePermissionSeeder)->run();
     (new SettingSeeder)->run();
     (new MusuwaNationSeeder)->run();
 });

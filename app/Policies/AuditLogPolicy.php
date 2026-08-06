@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\ClubRole;
+use App\Enums\Permission;
 use App\Models\User;
 
 final class AuditLogPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole([ClubRole::Administrator->value, ClubRole::Secretary->value]);
+        return $user->can(Permission::AuditView->value);
     }
 }

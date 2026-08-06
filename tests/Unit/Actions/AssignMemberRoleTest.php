@@ -6,10 +6,10 @@ use App\Actions\AssignMemberRole;
 use App\Enums\ClubRole;
 use App\Models\AuditLog;
 use App\Models\Member;
-use Database\Seeders\RoleSeeder;
+use Database\Seeders\RolePermissionSeeder;
 
 it('assigns a role to the member linked user and records an audit event', function (): void {
-    (new RoleSeeder)->run();
+    (new RolePermissionSeeder)->run();
 
     $member = memberWithRole(ClubRole::Member);
     $actor = Member::factory()->create();
@@ -28,7 +28,7 @@ it('assigns a role to the member linked user and records an audit event', functi
 });
 
 it('cannot assign a role to a member without a linked user', function (): void {
-    (new RoleSeeder)->run();
+    (new RolePermissionSeeder)->run();
 
     $member = Member::factory()->create();
 

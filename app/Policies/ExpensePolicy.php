@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\ClubRole;
 use App\Enums\ExpenseStatus;
+use App\Enums\Permission;
 use App\Models\Expense;
 use App\Models\Member;
 use App\Models\User;
@@ -19,17 +19,12 @@ final class ExpensePolicy
 
     public function create(User $user): bool
     {
-        return $user->hasAnyRole([
-            ClubRole::Treasurer->value,
-            ClubRole::Secretary->value,
-            ClubRole::InterimChairperson->value,
-            ClubRole::Administrator->value,
-        ]);
+        return $user->can(Permission::ExpensesCreate->value);
     }
 
     /**
-     * Approval sits with the chair or an administrator, and never with the
-     * member who requested the money.
+     * Separation of duties: never the member who requested the money. As with
+     * payments, that half is a row-level rule and is re-checked in the Action.
      */
     public function approve(User $user, Expense $expense): bool
     {
@@ -37,7 +32,7 @@ final class ExpensePolicy
             return false;
         }
 
-        if (! $user->hasAnyRole([ClubRole::InterimChairperson->value, ClubRole::Administrator->value])) {
+        if (! $user->can(Permission::ExpensesApprove->value)) {
             return false;
         }
 
@@ -49,12 +44,11 @@ final class ExpensePolicy
     public function pay(User $user, Expense $expense): bool
     {
         return $expense->status === ExpenseStatus::Approved
-            && $user->hasAnyRole([ClubRole::Treasurer->value, ClubRole::Administrator->value]);
+            && $user->can(Permission::ExpensesPay->value);
     }
 
     /**
-     * Verification is the third pair of eyes: not the requester, not the
-     * approver.
+     * The third pair of eyes: not the requester, not the approver.
      */
     public function verify(User $user, Expense $expense): bool
     {
@@ -62,7 +56,7 @@ final class ExpensePolicy
             return false;
         }
 
-        if (! $user->hasAnyRole([ClubRole::FinancialVerifier->value, ClubRole::Administrator->value])) {
+        if (! $user->can(Permission::ExpensesVerify->value)) {
             return false;
         }
 

@@ -30,6 +30,11 @@ enum Permission: string
     case SettingsUpdate = 'settings.update';
     case AuditView = 'audit.view';
 
+    // Administration of the application itself...
+    case RolesManage = 'roles.manage';
+    case UsersManage = 'users.manage';
+    case PositionsManage = 'positions.manage';
+
     // Contributions...
     case ContributionPeriodsCreate = 'contribution_periods.create';
     case PaymentsReview = 'payments.review';
@@ -68,6 +73,9 @@ enum Permission: string
             self::MembersAssignRole => 'Assign system roles',
             self::SettingsUpdate => 'Change club settings',
             self::AuditView => 'Read the audit log',
+            self::RolesManage => 'Manage system roles and their permissions',
+            self::UsersManage => 'Create and manage login accounts',
+            self::PositionsManage => 'Appoint and transfer club offices',
             self::ContributionPeriodsCreate => 'Open contribution periods',
             self::PaymentsReview => 'Verify or reject payments',
             self::PaymentsViewEvidence => 'View any payment evidence',

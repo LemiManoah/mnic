@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\ClubRole;
 use App\Enums\PaymentStatus;
+use App\Enums\Permission;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\User;
@@ -29,11 +29,13 @@ final class PaymentPolicy
 
     /**
      * Maker-checker: a payment is reviewed by someone other than whoever
-     * recorded it. Also enforced inside VerifyPayment / RejectPayment.
+     * recorded it. The "not your own" half is a row-level rule, not a
+     * permission — it is also enforced inside VerifyPayment / RejectPayment so
+     * an administrator bypassing this gate still cannot self-verify.
      */
     public function review(User $user, Payment $payment): bool
     {
-        if (! $user->hasAnyRole([ClubRole::FinancialVerifier->value, ClubRole::Administrator->value])) {
+        if (! $user->can(Permission::PaymentsReview->value)) {
             return false;
         }
 
@@ -48,11 +50,7 @@ final class PaymentPolicy
 
     public function viewEvidence(User $user, Payment $payment): bool
     {
-        if ($user->hasAnyRole([
-            ClubRole::FinancialVerifier->value,
-            ClubRole::Administrator->value,
-            ClubRole::Treasurer->value,
-        ])) {
+        if ($user->can(Permission::PaymentsViewEvidence->value)) {
             return true;
         }
 

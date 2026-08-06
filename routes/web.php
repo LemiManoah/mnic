@@ -30,10 +30,12 @@ use App\Http\Controllers\ReconciliationRejectionController;
 use App\Http\Controllers\ReconciliationReviewController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SystemRoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserEmailResetNotificationController;
 use App\Http\Controllers\UserEmailVerificationController;
 use App\Http\Controllers\UserEmailVerificationNotificationController;
+use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\UserPasswordController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\UserTwoFactorAuthenticationController;
@@ -127,6 +129,16 @@ Route::middleware('auth')->group(function (): void {
     // External accounts...
     Route::get('external-accounts', [ExternalAccountController::class, 'index'])->name('external-account.index');
     Route::post('external-accounts', [ExternalAccountController::class, 'store'])->name('external-account.store');
+
+    // System roles and permissions...
+    Route::get('system-roles', [SystemRoleController::class, 'index'])->name('system-role.index');
+    Route::post('system-roles', [SystemRoleController::class, 'store'])->name('system-role.store');
+    Route::put('system-roles/{role}', [SystemRoleController::class, 'update'])->name('system-role.update');
+    Route::delete('system-roles/{role}', [SystemRoleController::class, 'destroy'])->name('system-role.destroy');
+
+    // Login accounts...
+    Route::get('user-management', [UserManagementController::class, 'index'])->name('user-management.index');
+    Route::post('user-management', [UserManagementController::class, 'store'])->name('user-management.store');
 
     // Settings (club configuration)...
     Route::get('club-settings', [SettingController::class, 'index'])->name('setting.index');

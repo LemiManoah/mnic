@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\ClubRole;
+use App\Enums\Permission;
 use App\Models\User;
 
 final class SettingPolicy
@@ -16,6 +16,6 @@ final class SettingPolicy
 
     public function update(User $user): bool
     {
-        return $user->hasRole(ClubRole::Administrator->value);
+        return $user->can(Permission::SettingsUpdate->value);
     }
 }

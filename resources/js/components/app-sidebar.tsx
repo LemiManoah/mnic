@@ -30,6 +30,8 @@ import { index as paymentIndex } from '@/routes/payment';
 import { index as proposalIndex } from '@/routes/proposal';
 import { index as reconciliationIndex } from '@/routes/reconciliation';
 import { index as settingIndex } from '@/routes/setting';
+import { index as systemRoleIndex } from '@/routes/system-role';
+import { index as userManagementIndex } from '@/routes/user-management';
 import type { NavItem } from '@/types';
 
 type NavSection = {
@@ -47,6 +49,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const isFinancialVerifier = auth.roles.includes('financial-verifier');
 
     const administrationItems: NavItem[] = [
+        ...(isAdministrator
+            ? [
+                  {
+                      title: 'System Roles',
+                      href: systemRoleIndex(),
+                  } satisfies NavItem,
+                  {
+                      title: 'Login Accounts',
+                      href: userManagementIndex(),
+                  } satisfies NavItem,
+              ]
+            : []),
         ...(isAdministrator
             ? [
                   {

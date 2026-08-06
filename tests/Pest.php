@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Enums\ClubRole;
 use App\Models\Member;
 use App\Models\User;
-use Database\Seeders\RoleSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -34,7 +34,7 @@ expect()->extend('toBeOne', fn () => $this->toBe(1));
  */
 function memberWithRole(ClubRole $role, array $memberAttributes = []): Member
 {
-    (new RoleSeeder)->run();
+    (new RolePermissionSeeder)->run();
 
     $user = User::factory()->withoutTwoFactor()->create();
 
