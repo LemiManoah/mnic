@@ -33,6 +33,9 @@ final class PaymentFactory extends Factory
             'reviewed_by_member_id' => null,
             'reviewed_at' => null,
             'rejection_reason' => null,
+            'reversed_by_member_id' => null,
+            'reversed_at' => null,
+            'reversal_reason' => null,
         ];
     }
 
@@ -50,6 +53,15 @@ final class PaymentFactory extends Factory
             'status' => PaymentStatus::Rejected,
             'reviewed_at' => now(),
             'rejection_reason' => fake()->sentence(),
+        ]);
+    }
+
+    public function reversed(): self
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => PaymentStatus::Reversed,
+            'reversed_at' => now(),
+            'reversal_reason' => fake()->sentence(),
         ]);
     }
 }

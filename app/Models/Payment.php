@@ -28,6 +28,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read string|null $reviewed_by_member_id
  * @property-read CarbonInterface|null $reviewed_at
  * @property-read string|null $rejection_reason
+ * @property-read string|null $reversed_by_member_id
+ * @property-read CarbonInterface|null $reversed_at
+ * @property-read string|null $reversal_reason
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
  */
@@ -57,6 +60,9 @@ final class Payment extends Model
             'reviewed_by_member_id' => 'string',
             'reviewed_at' => 'datetime',
             'rejection_reason' => 'string',
+            'reversed_by_member_id' => 'string',
+            'reversed_at' => 'datetime',
+            'reversal_reason' => 'string',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -84,6 +90,14 @@ final class Payment extends Model
     public function reviewedByMember(): BelongsTo
     {
         return $this->belongsTo(Member::class, 'reviewed_by_member_id');
+    }
+
+    /**
+     * @return BelongsTo<Member, $this>
+     */
+    public function reversedByMember(): BelongsTo
+    {
+        return $this->belongsTo(Member::class, 'reversed_by_member_id');
     }
 
     /**

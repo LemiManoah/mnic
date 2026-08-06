@@ -2,6 +2,7 @@ import { Form, Head } from '@inertiajs/react';
 import { useState } from 'react';
 import PaymentController from '@/actions/App/Http/Controllers/PaymentController';
 import PaymentRejectionController from '@/actions/App/Http/Controllers/PaymentRejectionController';
+import PaymentReversalController from '@/actions/App/Http/Controllers/PaymentReversalController';
 import PaymentVerificationController from '@/actions/App/Http/Controllers/PaymentVerificationController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -274,6 +275,70 @@ function RejectPaymentDialog({ payment }: { payment: PaymentRow }) {
     );
 }
 
+function ReversePaymentDialog({ payment }: { payment: PaymentRow }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                    Reverse
+                </Button>
+            </DialogTrigger>
+
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Reverse payment</DialogTitle>
+                    <DialogDescription>
+                        Reference {payment.reference} - allocations will be
+                        removed and obligations restored.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <Form
+                    {...PaymentReversalController.update.form(payment.id)}
+                    options={{ preserveScroll: true }}
+                    onSuccess={() => setOpen(false)}
+                    className="space-y-4"
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <div className="grid gap-2">
+                                <Label htmlFor={`reverse-reason-${payment.id}`}>
+                                    Reason
+                                </Label>
+                                <Input
+                                    id={`reverse-reason-${payment.id}`}
+                                    name="reason"
+                                    required
+                                />
+                                <InputError message={errors.reason} />
+                            </div>
+
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="destructive"
+                                    disabled={processing}
+                                >
+                                    Reverse payment
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function PaymentIndex({
     payments,
     filters,
@@ -392,34 +457,53 @@ export default function PaymentIndex({
                                                 {payment.rejection_reason}
                                             </span>
                                         )}
+                                        {payment.reversal_reason && (
+                                            <span className="block text-xs text-muted-foreground">
+                                                {payment.reversal_reason}
+                                            </span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {payment.can_review && (
-                                            <div className="flex justify-end gap-2">
-                                                <Form
-                                                    {...PaymentVerificationController.update.form(
-                                                        payment.id,
-                                                    )}
-                                                    options={{
-                                                        preserveScroll: true,
-                                                    }}
-                                                >
-                                                    {({ processing }) => (
-                                                        <Button
-                                                            type="submit"
-                                                            size="sm"
-                                                            disabled={
-                                                                processing
-                                                            }
+                                        {(payment.can_review ||
+                                            payment.can_reverse) && (
+                                            <div className="flex flex-wrap justify-end gap-2">
+                                                {payment.can_review && (
+                                                    <>
+                                                        <Form
+                                                            {...PaymentVerificationController.update.form(
+                                                                payment.id,
+                                                            )}
+                                                            options={{
+                                                                preserveScroll:
+                                                                    true,
+                                                            }}
                                                         >
-                                                            Verify
-                                                        </Button>
-                                                    )}
-                                                </Form>
+                                                            {({
+                                                                processing,
+                                                            }) => (
+                                                                <Button
+                                                                    type="submit"
+                                                                    size="sm"
+                                                                    disabled={
+                                                                        processing
+                                                                    }
+                                                                >
+                                                                    Verify
+                                                                </Button>
+                                                            )}
+                                                        </Form>
 
-                                                <RejectPaymentDialog
-                                                    payment={payment}
-                                                />
+                                                        <RejectPaymentDialog
+                                                            payment={payment}
+                                                        />
+                                                    </>
+                                                )}
+
+                                                {payment.can_reverse && (
+                                                    <ReversePaymentDialog
+                                                        payment={payment}
+                                                    />
+                                                )}
                                             </div>
                                         )}
                                     </TableCell>

@@ -120,6 +120,8 @@ export type PaymentRow = {
     reviewed_by: string | null;
     rejection_reason: string | null;
     can_review: boolean;
+    can_reverse: boolean;
+    reversal_reason: string | null;
     evidence: PaymentEvidenceFile[];
 };
 

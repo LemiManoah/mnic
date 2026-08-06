@@ -55,6 +55,8 @@ final readonly class PaymentController
                 'reviewed_by' => $payment->reviewedByMember?->full_name,
                 'rejection_reason' => $payment->rejection_reason,
                 'can_review' => $user->can('review', $payment),
+                'can_reverse' => $user->can('reverse', $payment),
+                'reversal_reason' => $payment->reversal_reason,
                 'evidence' => $payment->evidence->map(fn (PaymentEvidence $evidence): array => [
                     'id' => $evidence->id,
                     'original_name' => $evidence->original_name,

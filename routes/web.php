@@ -21,6 +21,7 @@ use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentEvidenceController;
 use App\Http\Controllers\PaymentRejectionController;
+use App\Http\Controllers\PaymentReversalController;
 use App\Http\Controllers\PaymentVerificationController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ProposalVotingController;
@@ -69,6 +70,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('payments', [PaymentController::class, 'store'])->name('payment.store');
     Route::put('payments/{payment}/verification', [PaymentVerificationController::class, 'update'])->name('payment-verification.update');
     Route::put('payments/{payment}/rejection', [PaymentRejectionController::class, 'update'])->name('payment-rejection.update');
+    Route::put('payments/{payment}/reversal', [PaymentReversalController::class, 'update'])->name('payment-reversal.update');
     Route::get('payments/{payment}/evidence/{evidence}', [PaymentEvidenceController::class, 'show'])
         ->scopeBindings()
         ->name('payment-evidence.show');

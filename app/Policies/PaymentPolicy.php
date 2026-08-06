@@ -59,4 +59,10 @@ final class PaymentPolicy implements EnforcesBusinessRules
 
         return $member !== null && $payment->member_id === $member->id;
     }
+
+    public function reverse(User $user, Payment $payment): bool
+    {
+        return $payment->status === PaymentStatus::Verified
+            && $user->can(Permission::PaymentsReview->value);
+    }
 }
