@@ -1,6 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import ReconciliationController from '@/actions/App/Http/Controllers/ReconciliationController';
+import ReconciliationItemController from '@/actions/App/Http/Controllers/ReconciliationItemController';
 import ReconciliationReviewController from '@/actions/App/Http/Controllers/ReconciliationReviewController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -33,6 +34,7 @@ import { index as reconciliationIndex } from '@/routes/reconciliation';
 import type {
     BreadcrumbItem,
     ExternalAccountOption,
+    MemberOption,
     Paginated,
     PeriodOption,
     ReconciliationRow,
@@ -191,16 +193,128 @@ function StartReconciliationDialog({
     );
 }
 
+function AddItemDialog({
+    reconciliation,
+    members,
+}: {
+    reconciliation: ReconciliationRow;
+    members: MemberOption[];
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                    Add item
+                </Button>
+            </DialogTrigger>
+
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Record difference item</DialogTitle>
+                    <DialogDescription>
+                        Explain part of the difference before confirmation.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <Form
+                    {...ReconciliationItemController.store.form(
+                        reconciliation.id,
+                    )}
+                    options={{ preserveScroll: true }}
+                    onSuccess={() => setOpen(false)}
+                    resetOnSuccess
+                    className="space-y-4"
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <div className="grid gap-2">
+                                <Label
+                                    htmlFor={`description-${reconciliation.id}`}
+                                >
+                                    Description
+                                </Label>
+                                <Input
+                                    id={`description-${reconciliation.id}`}
+                                    name="description"
+                                    required
+                                />
+                                <InputError message={errors.description} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor={`amount-${reconciliation.id}`}>
+                                    Amount (UGX)
+                                </Label>
+                                <Input
+                                    id={`amount-${reconciliation.id}`}
+                                    name="amount"
+                                    type="number"
+                                    required
+                                />
+                                <InputError message={errors.amount} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label
+                                    htmlFor={`assigned-${reconciliation.id}`}
+                                >
+                                    Assigned to
+                                </Label>
+                                <select
+                                    id={`assigned-${reconciliation.id}`}
+                                    name="assigned_to_member_id"
+                                    defaultValue=""
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                                >
+                                    <option value="">Unassigned</option>
+                                    {members.map((member) => (
+                                        <option
+                                            key={member.id}
+                                            value={member.id}
+                                        >
+                                            {member.full_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError
+                                    message={errors.assigned_to_member_id}
+                                />
+                            </div>
+
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={processing}>
+                                    Save item
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function ReconciliationIndex({
     reconciliations,
     canCreate,
     periods,
     externalAccounts,
+    members,
 }: {
     reconciliations: Paginated<ReconciliationRow>;
     canCreate: boolean;
     periods: PeriodOption[];
     externalAccounts: ExternalAccountOption[];
+    members: MemberOption[];
 }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -237,113 +351,191 @@ export default function ReconciliationIndex({
                         </TableHeader>
                         <TableBody>
                             {reconciliations.data.map((row) => (
-                                <TableRow key={row.id}>
-                                    <TableCell className="font-medium">
-                                        {row.period}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                        {row.account ?? 'All'}
-                                    </TableCell>
-                                    <TableCell>
-                                        {formatUgx(
-                                            row.statement_closing_balance,
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {formatUgx(
-                                            row.expected_closing_balance,
-                                        )}
-                                    </TableCell>
-                                    <TableCell
-                                        className={
-                                            row.difference === 0
-                                                ? 'text-muted-foreground'
-                                                : 'font-medium'
-                                        }
-                                    >
-                                        {formatUgx(row.difference)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant={STATUS_VARIANT[row.status]}
+                                <Fragment key={row.id}>
+                                    <TableRow key={row.id}>
+                                        <TableCell className="font-medium">
+                                            {row.period}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {row.account ?? 'All'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {formatUgx(
+                                                row.statement_closing_balance,
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {formatUgx(
+                                                row.expected_closing_balance,
+                                            )}
+                                        </TableCell>
+                                        <TableCell
+                                            className={
+                                                row.difference === 0
+                                                    ? 'text-muted-foreground'
+                                                    : 'font-medium'
+                                            }
                                         >
-                                            {row.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            {row.can_submit && (
-                                                <Form
-                                                    {...ReconciliationReviewController.store.form(
-                                                        row.id,
-                                                    )}
-                                                    options={{
-                                                        preserveScroll: true,
-                                                    }}
-                                                >
-                                                    {({ processing }) => (
-                                                        <Button
-                                                            type="submit"
-                                                            size="sm"
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                        >
-                                                            Submit
-                                                        </Button>
-                                                    )}
-                                                </Form>
-                                            )}
+                                            {formatUgx(row.difference)}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    STATUS_VARIANT[row.status]
+                                                }
+                                            >
+                                                {row.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                {row.can_submit && (
+                                                    <Form
+                                                        {...ReconciliationReviewController.store.form(
+                                                            row.id,
+                                                        )}
+                                                        options={{
+                                                            preserveScroll: true,
+                                                        }}
+                                                    >
+                                                        {({ processing }) => (
+                                                            <Button
+                                                                type="submit"
+                                                                size="sm"
+                                                                disabled={
+                                                                    processing
+                                                                }
+                                                            >
+                                                                Submit
+                                                            </Button>
+                                                        )}
+                                                    </Form>
+                                                )}
 
-                                            {row.can_confirm && (
-                                                <Form
-                                                    {...ReconciliationReviewController.update.form(
-                                                        row.id,
-                                                    )}
-                                                    options={{
-                                                        preserveScroll: true,
-                                                    }}
-                                                >
-                                                    {({ processing }) => (
-                                                        <Button
-                                                            type="submit"
-                                                            size="sm"
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                        >
-                                                            Confirm
-                                                        </Button>
-                                                    )}
-                                                </Form>
-                                            )}
+                                                {row.can_confirm && (
+                                                    <Form
+                                                        {...ReconciliationReviewController.update.form(
+                                                            row.id,
+                                                        )}
+                                                        options={{
+                                                            preserveScroll: true,
+                                                        }}
+                                                    >
+                                                        {({ processing }) => (
+                                                            <Button
+                                                                type="submit"
+                                                                size="sm"
+                                                                disabled={
+                                                                    processing
+                                                                }
+                                                            >
+                                                                Confirm
+                                                            </Button>
+                                                        )}
+                                                    </Form>
+                                                )}
 
-                                            {row.can_lock && (
-                                                <Form
-                                                    {...ReconciliationReviewController.destroy.form(
-                                                        row.id,
-                                                    )}
-                                                    options={{
-                                                        preserveScroll: true,
-                                                    }}
-                                                >
-                                                    {({ processing }) => (
-                                                        <Button
-                                                            type="submit"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            disabled={
-                                                                processing
-                                                            }
+                                                {row.can_lock && (
+                                                    <Form
+                                                        {...ReconciliationReviewController.destroy.form(
+                                                            row.id,
+                                                        )}
+                                                        options={{
+                                                            preserveScroll: true,
+                                                        }}
+                                                    >
+                                                        {({ processing }) => (
+                                                            <Button
+                                                                type="submit"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={
+                                                                    processing
+                                                                }
+                                                            >
+                                                                Close month
+                                                            </Button>
+                                                        )}
+                                                    </Form>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                    {row.items.length > 0 && (
+                                        <TableRow key={`${row.id}-items`}>
+                                            <TableCell colSpan={7}>
+                                                <div className="space-y-2 rounded-md bg-muted/40 p-3 text-sm">
+                                                    {row.items.map((item) => (
+                                                        <div
+                                                            key={item.id}
+                                                            className="flex flex-wrap items-center justify-between gap-2"
                                                         >
-                                                            Close month
-                                                        </Button>
-                                                    )}
-                                                </Form>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
+                                                            <div>
+                                                                <span className="font-medium">
+                                                                    {
+                                                                        item.description
+                                                                    }
+                                                                </span>
+                                                                <span className="ml-2 text-muted-foreground">
+                                                                    {formatUgx(
+                                                                        item.amount,
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                            {item.is_resolved ? (
+                                                                <Badge>
+                                                                    resolved
+                                                                </Badge>
+                                                            ) : row.can_submit ? (
+                                                                <Form
+                                                                    {...ReconciliationItemController.update.form(
+                                                                        {
+                                                                            reconciliation:
+                                                                                row.id,
+                                                                            item: item.id,
+                                                                        },
+                                                                    )}
+                                                                    options={{
+                                                                        preserveScroll: true,
+                                                                    }}
+                                                                >
+                                                                    {({
+                                                                        processing,
+                                                                    }) => (
+                                                                        <Button
+                                                                            type="submit"
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            disabled={
+                                                                                processing
+                                                                            }
+                                                                        >
+                                                                            Resolve
+                                                                        </Button>
+                                                                    )}
+                                                                </Form>
+                                                            ) : (
+                                                                <Badge variant="outline">
+                                                                    unresolved
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                    {row.can_submit && row.difference !== 0 && (
+                                        <TableRow key={`${row.id}-add-item`}>
+                                            <TableCell colSpan={7}>
+                                                <AddItemDialog
+                                                    reconciliation={row}
+                                                    members={members}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </Fragment>
                             ))}
 
                             {reconciliations.data.length === 0 && (

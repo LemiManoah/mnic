@@ -10,6 +10,7 @@ use App\Models\ContributionPeriod;
 use App\Models\ExternalAccount;
 use App\Models\Member;
 use App\Models\Reconciliation;
+use App\Models\ReconciliationItem;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +26,7 @@ final readonly class ReconciliationController
 
         return Inertia::render('reconciliation/index', [
             'reconciliations' => Reconciliation::query()
-                ->with(['contributionPeriod', 'externalAccount', 'preparedByMember'])
+                ->with(['contributionPeriod', 'externalAccount', 'items', 'preparedByMember'])
                 ->latest()
                 ->paginate(15)
                 ->through(fn (Reconciliation $reconciliation): array => [
@@ -38,6 +39,15 @@ final readonly class ReconciliationController
                     'difference' => $reconciliation->difference,
                     'status' => $reconciliation->status,
                     'prepared_by' => $reconciliation->preparedByMember?->full_name,
+                    'items' => $reconciliation->items
+                        ->sortByDesc('created_at')
+                        ->values()
+                        ->map(fn (ReconciliationItem $item): array => [
+                            'id' => $item->id,
+                            'description' => $item->description,
+                            'amount' => $item->amount,
+                            'is_resolved' => $item->is_resolved,
+                        ]),
                     'can_submit' => $user->can('update', $reconciliation),
                     'can_confirm' => $user->can('confirm', $reconciliation),
                     'can_lock' => $user->can('lock', $reconciliation),
@@ -55,6 +65,9 @@ final readonly class ReconciliationController
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name', 'masked_identifier']),
+            'members' => Member::query()
+                ->orderBy('full_name')
+                ->get(['id', 'full_name', 'member_number']),
         ]);
     }
 

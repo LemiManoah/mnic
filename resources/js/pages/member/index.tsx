@@ -2,8 +2,8 @@ import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import MemberController from '@/actions/App/Http/Controllers/MemberController';
 import Heading from '@/components/heading';
-import ListFilters from '@/components/list-filters';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ import {
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { index as memberIndex, show as showMember } from '@/routes/member';
-import type { BreadcrumbItem, Member, Paginated } from '@/types';
+import type { BreadcrumbItem, Member, Option, Paginated } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

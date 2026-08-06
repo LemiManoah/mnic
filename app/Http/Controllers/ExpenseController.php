@@ -35,9 +35,9 @@ final readonly class ExpenseController
                 ->with(['requestedByMember', 'approvedByMember', 'verifiedByMember'])
                 ->when($search !== '', fn (Builder $query): Builder => $query
                     ->where(fn (Builder $inner): Builder => $inner
-                        ->where('reference', 'like', "%{$search}%")
-                        ->orWhere('purpose', 'like', "%{$search}%")
-                        ->orWhere('payee', 'like', "%{$search}%")))
+                        ->where('reference', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('purpose', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('payee', 'like', sprintf('%%%s%%', $search))))
                 ->when($status !== '', fn (Builder $query): Builder => $query
                     ->where('status', $status))
                 ->when($category !== '', fn (Builder $query): Builder => $query

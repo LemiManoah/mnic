@@ -15,22 +15,36 @@ use App\Models\Meeting;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final readonly class ActionItemController
 {
-    public function index(#[CurrentUser] User $user): Response
+    public function index(Request $request, #[CurrentUser] User $user): Response
     {
         Gate::authorize('viewAny', ActionItem::class);
+
+        $search = $request->string('search')->trim()->value();
+        $status = $request->string('status')->value();
 
         return Inertia::render('action-item/index', [
             'actionItems' => ActionItem::query()
                 ->with(['ownerMember', 'meeting'])
+                ->when($search !== '', fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $inner): Builder => $inner
+                        ->where('title', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('description', 'like', sprintf('%%%s%%', $search))
+                        ->orWhereHas('ownerMember', fn (Builder $member): Builder => $member
+                            ->where('full_name', 'like', sprintf('%%%s%%', $search)))))
+                ->when($status !== '', fn (Builder $query): Builder => $query
+                    ->where('status', $status))
                 ->orderByRaw('due_on is null, due_on asc')
                 ->paginate(20)
+                ->withQueryString()
                 ->through(fn (ActionItem $item): array => [
                     'id' => $item->id,
                     'title' => $item->title,
@@ -41,6 +55,10 @@ final readonly class ActionItemController
                     'status' => $item->status,
                     'can_update' => $user->can('update', $item),
                 ]),
+            'filters' => [
+                'search' => $search === '' ? null : $search,
+                'status' => $status === '' ? null : $status,
+            ],
             'canCreate' => $user->can('create', ActionItem::class),
             'members' => Member::query()
                 ->where('status', MemberStatus::Active->value)

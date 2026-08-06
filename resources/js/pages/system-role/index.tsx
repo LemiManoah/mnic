@@ -314,7 +314,10 @@ export default function SystemRoleIndex({
 
                 <p className="text-sm text-muted-foreground">
                     Looking for the club&apos;s elected offices? Those live on
-                    the <Link href="/members" className="underline">Members</Link>{' '}
+                    the{' '}
+                    <Link href="/members" className="underline">
+                        Members
+                    </Link>{' '}
                     screen.
                 </p>
             </AdminLayout>

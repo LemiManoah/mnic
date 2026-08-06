@@ -52,7 +52,7 @@ final readonly class SystemRoleController
                     ])
                     ->values()
                     ->all())
-                ->toArray(),
+                ->all(),
         ]);
     }
 

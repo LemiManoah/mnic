@@ -33,10 +33,10 @@ final readonly class PaymentController
             ->with(['member', 'recordedByMember', 'reviewedByMember', 'evidence'])
             ->when($search !== '', fn (Builder $query): Builder => $query
                 ->where(fn (Builder $inner): Builder => $inner
-                    ->where('reference', 'like', "%{$search}%")
+                    ->where('reference', 'like', sprintf('%%%s%%', $search))
                     ->orWhereHas('member', fn (Builder $member): Builder => $member
-                        ->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('member_number', 'like', "%{$search}%"))))
+                        ->where('full_name', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('member_number', 'like', sprintf('%%%s%%', $search)))))
             ->when($status !== '', fn (Builder $query): Builder => $query
                 ->where('status', $status))
             ->latest()

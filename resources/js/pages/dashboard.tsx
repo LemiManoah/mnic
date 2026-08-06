@@ -5,10 +5,7 @@ import {
     IconCircleCheck,
     IconGavel,
 } from '@tabler/icons-react';
-import {
-    ClubStatCards,
-    type StatCard,
-} from '@/components/club-stat-cards';
+import { ClubStatCards, type StatCard } from '@/components/club-stat-cards';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

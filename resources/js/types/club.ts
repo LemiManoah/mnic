@@ -308,9 +308,17 @@ export type ReconciliationRow = {
     difference: number;
     status: ReconciliationStatus;
     prepared_by: string | null;
+    items: ReconciliationItemRow[];
     can_submit: boolean;
     can_confirm: boolean;
     can_lock: boolean;
+};
+
+export type ReconciliationItemRow = {
+    id: string;
+    description: string;
+    amount: number;
+    is_resolved: boolean;
 };
 
 export type MembershipStatusHistory = {

@@ -6,6 +6,7 @@ import ExpensePaymentController from '@/actions/App/Http/Controllers/ExpensePaym
 import ExpenseVerificationController from '@/actions/App/Http/Controllers/ExpenseVerificationController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -360,11 +361,15 @@ function RejectExpenseDialog({ expense }: { expense: ExpenseRow }) {
 export default function ExpenseIndex({
     expenses,
     canRequest,
+    filters,
+    statusOptions,
     categoryOptions,
     externalAccounts,
 }: {
     expenses: Paginated<ExpenseRow>;
     canRequest: boolean;
+    filters: { search: string | null; status: string | null; category: string | null };
+    statusOptions: Option[];
     categoryOptions: Option[];
     externalAccounts: ExternalAccountOption[];
 }) {
@@ -386,6 +391,26 @@ export default function ExpenseIndex({
                         />
                     )}
                 </div>
+
+                <ListFilters
+                    url={expenseIndex().url}
+                    search={filters.search}
+                    placeholder="Search reference, purpose or payee..."
+                    filters={[
+                        {
+                            name: 'status',
+                            label: 'Status',
+                            value: filters.status,
+                            options: statusOptions,
+                        },
+                        {
+                            name: 'category',
+                            label: 'Category',
+                            value: filters.category,
+                            options: categoryOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

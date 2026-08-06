@@ -37,9 +37,9 @@ final readonly class MemberController
             'members' => Member::query()
                 ->when($search !== '', fn (Builder $query): Builder => $query
                     ->where(fn (Builder $inner): Builder => $inner
-                        ->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('member_number', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")))
+                        ->where('full_name', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('member_number', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('phone', 'like', sprintf('%%%s%%', $search))))
                 ->when($status !== '', fn (Builder $query): Builder => $query
                     ->where('status', $status))
                 ->latest()

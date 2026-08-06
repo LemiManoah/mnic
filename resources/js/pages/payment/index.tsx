@@ -5,6 +5,7 @@ import PaymentRejectionController from '@/actions/App/Http/Controllers/PaymentRe
 import PaymentVerificationController from '@/actions/App/Http/Controllers/PaymentVerificationController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -275,11 +276,15 @@ function RejectPaymentDialog({ payment }: { payment: PaymentRow }) {
 
 export default function PaymentIndex({
     payments,
+    filters,
     members,
+    statusOptions,
     methodOptions,
 }: {
     payments: Paginated<PaymentRow>;
+    filters: { search: string | null; status: string | null };
     members: MemberOption[];
+    statusOptions: Option[];
     methodOptions: Option[];
 }) {
     return (
@@ -299,6 +304,20 @@ export default function PaymentIndex({
                         methodOptions={methodOptions}
                     />
                 </div>
+
+                <ListFilters
+                    url={paymentIndex().url}
+                    search={filters.search}
+                    placeholder="Search reference, name or member number..."
+                    filters={[
+                        {
+                            name: 'status',
+                            label: 'Status',
+                            value: filters.status,
+                            options: statusOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import ActionItemController from '@/actions/App/Http/Controllers/ActionItemController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -163,12 +164,14 @@ function AssignActionDialog({
 export default function ActionItemIndex({
     actionItems,
     canCreate,
+    filters,
     members,
     meetings,
     statusOptions,
 }: {
     actionItems: Paginated<ActionItemRow>;
     canCreate: boolean;
+    filters: { search: string | null; status: string | null };
     members: MemberOption[];
     meetings: MeetingOption[];
     statusOptions: Option[];
@@ -192,6 +195,20 @@ export default function ActionItemIndex({
                         />
                     )}
                 </div>
+
+                <ListFilters
+                    url={actionItemIndex().url}
+                    search={filters.search}
+                    placeholder="Search title, description or owner..."
+                    filters={[
+                        {
+                            name: 'status',
+                            label: 'Status',
+                            value: filters.status,
+                            options: statusOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

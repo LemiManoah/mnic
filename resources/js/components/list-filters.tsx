@@ -78,7 +78,11 @@ export default function ListFilters({
 
     const clearAll = () => {
         setTerm('');
-        router.get(url, {}, { preserveState: true, preserveScroll: true, replace: true });
+        router.get(
+            url,
+            {},
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
     };
 
     const hasActiveFilter =
