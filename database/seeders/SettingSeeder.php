@@ -29,6 +29,16 @@ final class SettingSeeder extends Seeder
                 'type' => SettingValueType::Integer,
                 'value' => '10',
             ],
+            'quorum_percent' => [
+                'label' => 'Voting Quorum (% of eligible members)',
+                'type' => SettingValueType::Integer,
+                'value' => '50',
+            ],
+            'approval_percent' => [
+                'label' => 'Approval Threshold (% of decisive votes)',
+                'type' => SettingValueType::Integer,
+                'value' => '50',
+            ],
         ];
 
         foreach ($settings as $key => $definition) {

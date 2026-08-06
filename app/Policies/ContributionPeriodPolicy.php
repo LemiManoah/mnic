@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\ClubRole;
-use App\Models\ContributionPeriod;
 use App\Models\User;
 
 final class ContributionPeriodPolicy
 {
-    public function viewAny(User $user): bool
+    public function viewAny(): bool
     {
         return true;
     }
 
-    public function view(User $user, ContributionPeriod $contributionPeriod): bool
+    public function view(): bool
     {
         return true;
     }

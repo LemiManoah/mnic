@@ -9,6 +9,7 @@ use App\Enums\PaymentMethod;
 use App\Http\Requests\CreatePaymentRequest;
 use App\Models\Member;
 use App\Models\Payment;
+use App\Models\PaymentEvidence;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
@@ -39,7 +40,7 @@ final readonly class PaymentController
                 'reviewed_by' => $payment->reviewedByMember?->full_name,
                 'rejection_reason' => $payment->rejection_reason,
                 'can_review' => $user->can('review', $payment),
-                'evidence' => $payment->evidence->map(fn ($evidence): array => [
+                'evidence' => $payment->evidence->map(fn (PaymentEvidence $evidence): array => [
                     'id' => $evidence->id,
                     'original_name' => $evidence->original_name,
                 ]),

@@ -23,6 +23,7 @@ test('to array', function (): void {
             'status',
             'created_at',
             'updated_at',
+            'position',
         ]);
 });
 

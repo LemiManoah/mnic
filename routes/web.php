@@ -2,15 +2,32 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ActionItemController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ContributionPeriodController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseApprovalController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ExpensePaymentController;
+use App\Http\Controllers\ExpenseVerificationController;
+use App\Http\Controllers\ExternalAccountController;
+use App\Http\Controllers\MeetingAttendanceController;
+use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\MeetingMinutesController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberRoleController;
 use App\Http\Controllers\MemberStatusController;
+use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentEvidenceController;
 use App\Http\Controllers\PaymentRejectionController;
 use App\Http\Controllers\PaymentVerificationController;
+use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\ProposalVotingController;
+use App\Http\Controllers\ReconciliationController;
+use App\Http\Controllers\ReconciliationItemController;
+use App\Http\Controllers\ReconciliationRejectionController;
+use App\Http\Controllers\ReconciliationReviewController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
@@ -20,13 +37,14 @@ use App\Http\Controllers\UserEmailVerificationNotificationController;
 use App\Http\Controllers\UserPasswordController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\UserTwoFactorAuthenticationController;
+use App\Http\Controllers\VoteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn () => Inertia::render('welcome'))->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('dashboard', fn () => Inertia::render('dashboard'))->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -52,6 +70,63 @@ Route::middleware('auth')->group(function (): void {
     Route::get('payments/{payment}/evidence/{evidence}', [PaymentEvidenceController::class, 'show'])
         ->scopeBindings()
         ->name('payment-evidence.show');
+
+    // Meetings...
+    Route::get('meetings', [MeetingController::class, 'index'])->name('meeting.index');
+    Route::post('meetings', [MeetingController::class, 'store'])->name('meeting.store');
+    Route::get('meetings/{meeting}', [MeetingController::class, 'show'])->name('meeting.show');
+    Route::put('meetings/{meeting}/attendance', [MeetingAttendanceController::class, 'update'])->name('meeting-attendance.update');
+    Route::post('meetings/{meeting}/minutes', [MeetingMinutesController::class, 'store'])->name('meeting-minutes.store');
+    Route::put('meetings/{meeting}/minutes', [MeetingMinutesController::class, 'update'])->name('meeting-minutes.update');
+
+    // Proposals and voting...
+    Route::get('proposals', [ProposalController::class, 'index'])->name('proposal.index');
+    Route::post('proposals', [ProposalController::class, 'store'])->name('proposal.store');
+    Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposal.show');
+    Route::post('proposals/{proposal}/voting', [ProposalVotingController::class, 'store'])->name('proposal-voting.store');
+    Route::put('proposals/{proposal}/voting', [ProposalVotingController::class, 'update'])->name('proposal-voting.update');
+    Route::post('proposals/{proposal}/votes', [VoteController::class, 'store'])->name('vote.store');
+
+    // Action items...
+    Route::get('action-items', [ActionItemController::class, 'index'])->name('action-item.index');
+    Route::post('action-items', [ActionItemController::class, 'store'])->name('action-item.store');
+    Route::put('action-items/{actionItem}', [ActionItemController::class, 'update'])->name('action-item.update');
+
+    // Expenses...
+    Route::get('expenses', [ExpenseController::class, 'index'])->name('expense.index');
+    Route::post('expenses', [ExpenseController::class, 'store'])->name('expense.store');
+    Route::post('expenses/{expense}/approval', [ExpenseApprovalController::class, 'store'])->name('expense-approval.store');
+    Route::put('expenses/{expense}/approval', [ExpenseApprovalController::class, 'update'])->name('expense-approval.update');
+    Route::put('expenses/{expense}/payment', [ExpensePaymentController::class, 'update'])->name('expense-payment.update');
+    Route::put('expenses/{expense}/verification', [ExpenseVerificationController::class, 'update'])->name('expense-verification.update');
+
+    // Reconciliation and monthly close...
+    Route::get('reconciliations', [ReconciliationController::class, 'index'])->name('reconciliation.index');
+    Route::post('reconciliations', [ReconciliationController::class, 'store'])->name('reconciliation.store');
+    Route::post('reconciliations/{reconciliation}/review', [ReconciliationReviewController::class, 'store'])
+        ->defaults('ability', 'update')
+        ->name('reconciliation-review.store');
+    Route::put('reconciliations/{reconciliation}/review', [ReconciliationReviewController::class, 'update'])
+        ->defaults('ability', 'confirm')
+        ->name('reconciliation-review.update');
+    Route::delete('reconciliations/{reconciliation}/review', [ReconciliationReviewController::class, 'destroy'])
+        ->defaults('ability', 'lock')
+        ->name('reconciliation-review.destroy');
+    Route::put('reconciliations/{reconciliation}/rejection', [ReconciliationRejectionController::class, 'update'])
+        ->name('reconciliation-rejection.update');
+    Route::post('reconciliations/{reconciliation}/items', [ReconciliationItemController::class, 'store'])
+        ->name('reconciliation-item.store');
+    Route::put('reconciliations/{reconciliation}/items/{item}', [ReconciliationItemController::class, 'update'])
+        ->scopeBindings()
+        ->name('reconciliation-item.update');
+
+    // Monthly transparency report...
+    Route::get('reports/monthly', [MonthlyReportController::class, 'index'])->name('monthly-report.index');
+    Route::get('reports/monthly/{contributionPeriod}', [MonthlyReportController::class, 'show'])->name('monthly-report.show');
+
+    // External accounts...
+    Route::get('external-accounts', [ExternalAccountController::class, 'index'])->name('external-account.index');
+    Route::post('external-accounts', [ExternalAccountController::class, 'store'])->name('external-account.store');
 
     // Settings (club configuration)...
     Route::get('club-settings', [SettingController::class, 'index'])->name('setting.index');

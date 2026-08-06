@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\ClubRole;
-use App\Models\Member;
 
 it('allows an administrator to assign a role', function (): void {
     $actor = memberWithRole(ClubRole::Administrator);

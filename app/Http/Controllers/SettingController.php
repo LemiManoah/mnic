@@ -24,8 +24,7 @@ final readonly class SettingController
         return Inertia::render('setting/index', [
             'settings' => Setting::query()->get()->map(function (Setting $setting): array {
                 $versions = $setting->versions()
-                    ->orderByDesc('effective_from')
-                    ->orderByDesc('created_at')
+                    ->orderByDesc('effective_from')->latest()
                     ->get();
 
                 $today = now()->toDateString();

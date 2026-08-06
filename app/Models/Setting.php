@@ -54,8 +54,7 @@ final class Setting extends Model
     {
         return $this->versions()
             ->whereDate('effective_from', '<=', now()->toDateString())
-            ->orderByDesc('effective_from')
-            ->orderByDesc('created_at')
+            ->orderByDesc('effective_from')->latest()
             ->first();
     }
 }

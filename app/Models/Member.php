@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\ClubPosition;
 use App\Enums\MemberStatus;
 use Carbon\CarbonInterface;
 use Database\Factories\MemberFactory;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read string|null $referred_by_member_id
  * @property-read string $member_number
  * @property-read string $full_name
+ * @property-read ClubPosition|null $position
  * @property-read string $phone
  * @property-read string|null $emergency_contact
  * @property-read CarbonInterface $joined_at
@@ -44,6 +46,7 @@ final class Member extends Model
             'referred_by_member_id' => 'string',
             'member_number' => 'string',
             'full_name' => 'string',
+            'position' => ClubPosition::class,
             'phone' => 'string',
             'emergency_contact' => 'string',
             'joined_at' => 'date',

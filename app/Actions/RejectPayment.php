@@ -19,13 +19,9 @@ final readonly class RejectPayment
 
     public function handle(Payment $payment, Member $verifier, string $reason, ?string $ipAddress = null): Payment
     {
-        if ($payment->recorded_by_member_id === $verifier->id) {
-            throw new InvalidArgumentException('A payment cannot be reviewed by the member who recorded it.');
-        }
+        throw_if($payment->recorded_by_member_id === $verifier->id, InvalidArgumentException::class, 'A payment cannot be reviewed by the member who recorded it.');
 
-        if ($payment->status !== PaymentStatus::Submitted) {
-            throw new InvalidArgumentException('Only a submitted payment can be rejected.');
-        }
+        throw_if($payment->status !== PaymentStatus::Submitted, InvalidArgumentException::class, 'Only a submitted payment can be rejected.');
 
         return DB::transaction(function () use ($payment, $verifier, $reason, $ipAddress): Payment {
             $before = $payment->toArray();

@@ -15,12 +15,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
+import { formatUgx } from '@/lib/money';
 import {
     edit as editMember,
     index as memberIndex,
     show as showMember,
 } from '@/routes/member';
-import { formatUgx } from '@/lib/money';
 import type {
     AuditLog,
     BreadcrumbItem,
@@ -53,6 +53,7 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
 export default function MemberShow({
     member,
     referredByName,
+    position,
     currentRole,
     email,
     canUpdate,
@@ -64,6 +65,7 @@ export default function MemberShow({
 }: {
     member: Member;
     referredByName: string | null;
+    position: string | null;
     currentRole?: string;
     email: string | null;
     canUpdate: boolean;
@@ -124,9 +126,7 @@ export default function MemberShow({
                         <TabsTrigger value="contributions">
                             Contributions
                         </TabsTrigger>
-                        <TabsTrigger value="status">
-                            Status history
-                        </TabsTrigger>
+                        <TabsTrigger value="status">Status history</TabsTrigger>
                         <TabsTrigger value="access">Access</TabsTrigger>
                         {canViewActivity && (
                             <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -160,6 +160,16 @@ export default function MemberShow({
                                             >
                                                 {member.status}
                                             </Badge>
+                                        }
+                                    />
+                                    <DetailRow
+                                        label="Club position"
+                                        value={
+                                            position ?? (
+                                                <span className="text-muted-foreground">
+                                                    No elected office
+                                                </span>
+                                            )
                                         }
                                     />
                                     <DetailRow
@@ -477,8 +487,8 @@ export default function MemberShow({
                                                             colSpan={3}
                                                             className="py-6 text-center text-muted-foreground"
                                                         >
-                                                            No activity
-                                                            recorded yet.
+                                                            No activity recorded
+                                                            yet.
                                                         </TableCell>
                                                     </TableRow>
                                                 )}

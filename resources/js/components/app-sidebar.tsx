@@ -18,10 +18,17 @@ import {
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
+import { index as actionItemIndex } from '@/routes/action-item';
 import { index as auditLogIndex } from '@/routes/audit-log';
 import { index as contributionPeriodIndex } from '@/routes/contribution-period';
+import { index as expenseIndex } from '@/routes/expense';
+import { index as externalAccountIndex } from '@/routes/external-account';
+import { index as meetingIndex } from '@/routes/meeting';
 import { index as memberIndex } from '@/routes/member';
+import { index as monthlyReportIndex } from '@/routes/monthly-report';
 import { index as paymentIndex } from '@/routes/payment';
+import { index as proposalIndex } from '@/routes/proposal';
+import { index as reconciliationIndex } from '@/routes/reconciliation';
 import { index as settingIndex } from '@/routes/setting';
 import type { NavItem } from '@/types';
 
@@ -36,6 +43,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     const isAdministrator = auth.roles.includes('administrator');
     const isSecretary = auth.roles.includes('secretary');
+    const isTreasurer = auth.roles.includes('treasurer');
+    const isFinancialVerifier = auth.roles.includes('financial-verifier');
 
     const administrationItems: NavItem[] = [
         ...(isAdministrator
@@ -70,6 +79,37 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             items: [
                 { title: 'Periods', href: contributionPeriodIndex() },
                 { title: 'Payments', href: paymentIndex() },
+            ],
+        },
+        {
+            title: 'Governance',
+            items: [
+                { title: 'Meetings', href: meetingIndex() },
+                { title: 'Proposals', href: proposalIndex() },
+                { title: 'Actions', href: actionItemIndex() },
+            ],
+        },
+        {
+            title: 'Finance',
+            items: [
+                { title: 'Expenses', href: expenseIndex() },
+                { title: 'Reconciliation', href: reconciliationIndex() },
+                { title: 'Monthly reports', href: monthlyReportIndex() },
+            ],
+        },
+        {
+            title: 'Finance',
+            items: [
+                { title: 'Expenses', href: expenseIndex() },
+                { title: 'Reconciliation', href: reconciliationIndex() },
+                ...(isAdministrator || isTreasurer || isFinancialVerifier
+                    ? [
+                          {
+                              title: 'External accounts',
+                              href: externalAccountIndex(),
+                          } satisfies NavItem,
+                      ]
+                    : []),
             ],
         },
         ...(administrationItems.length > 0

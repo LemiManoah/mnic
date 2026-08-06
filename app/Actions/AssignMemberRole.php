@@ -21,9 +21,7 @@ final readonly class AssignMemberRole
         $member->loadMissing('user');
         $user = $member->user;
 
-        if ($user === null) {
-            throw new RuntimeException('Cannot assign a role to a member without a linked user account.');
-        }
+        throw_if($user === null, RuntimeException::class, 'Cannot assign a role to a member without a linked user account.');
 
         DB::transaction(function () use ($member, $user, $role, $actor, $ipAddress): void {
             $before = ['roles' => $user->getRoleNames()->all()];

@@ -39,7 +39,7 @@ final readonly class ChangeMemberStatus
     public static function allowedTransitionsFrom(MemberStatus $from): array
     {
         return array_map(
-            static fn (string $value): MemberStatus => MemberStatus::from($value),
+            MemberStatus::from(...),
             self::ALLOWED_TRANSITIONS[$from->value],
         );
     }
@@ -56,7 +56,7 @@ final readonly class ChangeMemberStatus
         $fromStatus = $member->status;
 
         if (! self::isTransitionAllowed($fromStatus, $toStatus)) {
-            throw new InvalidArgumentException("Cannot transition member from {$fromStatus->value} to {$toStatus->value}.");
+            throw new InvalidArgumentException(sprintf('Cannot transition member from %s to %s.', $fromStatus->value, $toStatus->value));
         }
 
         return DB::transaction(function () use ($member, $fromStatus, $toStatus, $reason, $effectiveDate, $resolutionReference, $actor, $ipAddress): Member {

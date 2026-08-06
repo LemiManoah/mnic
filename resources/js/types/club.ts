@@ -15,12 +15,25 @@ export type ClubRole =
 
 export type SettingValueType = 'integer' | 'decimal' | 'text' | 'date';
 
+export type ClubPosition =
+    | 'chairperson'
+    | 'vice-chairperson'
+    | 'general-secretary'
+    | 'assistant-general-secretary'
+    | 'treasurer'
+    | 'assistant-treasurer'
+    | 'mobilizer'
+    | 'assistant-mobilizer'
+    | 'chief-whip'
+    | 'assistant-chief-whip';
+
 export type Member = {
     id: string;
     user_id: string | null;
     referred_by_member_id: string | null;
     member_number: string;
     full_name: string;
+    position: ClubPosition | null;
     phone: string;
     emergency_contact: string | null;
     joined_at: string;
@@ -114,6 +127,190 @@ export type MemberOption = {
     id: string;
     full_name: string;
     member_number: string;
+};
+
+export type MeetingStatus =
+    | 'scheduled'
+    | 'completed'
+    | 'confirmed'
+    | 'cancelled';
+
+export type AttendanceStatus = 'present' | 'apologies' | 'absent';
+
+export type ProposalStatus =
+    | 'draft'
+    | 'open'
+    | 'passed'
+    | 'rejected'
+    | 'withdrawn';
+
+export type VoteChoice = 'for' | 'against' | 'abstain';
+
+export type ActionItemStatus =
+    | 'open'
+    | 'in_progress'
+    | 'blocked'
+    | 'completed'
+    | 'cancelled';
+
+export type Meeting = {
+    id: string;
+    reference: string;
+    title: string;
+    scheduled_for: string;
+    location: string | null;
+    agenda: string | null;
+    status: MeetingStatus;
+    present_count?: number;
+};
+
+export type MeetingOption = {
+    id: string;
+    reference: string;
+    title: string;
+};
+
+export type AttendanceRow = {
+    member_id: string;
+    member_name: string;
+    status: AttendanceStatus;
+};
+
+export type MinuteSummary = {
+    id: string;
+    version: number;
+    body: string;
+    confirmed_at: string | null;
+};
+
+export type MinuteVersion = {
+    id: string;
+    version: number;
+    confirmed_at: string | null;
+};
+
+export type Proposal = {
+    id: string;
+    meeting_id: string | null;
+    title: string;
+    description: string;
+    status: ProposalStatus;
+    opened_at: string | null;
+    closes_at: string | null;
+    closed_at: string | null;
+    eligible_voter_count: number;
+    quorum_required: number;
+    approval_percent: number;
+    outcome_note: string | null;
+    votes_count?: number;
+};
+
+export type VoteRow = {
+    id: string;
+    member_name: string;
+    choice: VoteChoice;
+    has_conflict: boolean;
+    conflict_note: string | null;
+};
+
+export type VoteTally = {
+    for: number;
+    against: number;
+    abstain: number;
+};
+
+export type ActionItemRow = {
+    id: string;
+    title: string;
+    description: string | null;
+    owner: string | null;
+    meeting: string | null;
+    due_on: string | null;
+    status: ActionItemStatus;
+    can_update: boolean;
+};
+
+export type MeetingProposalSummary = {
+    id: string;
+    title: string;
+    status: ProposalStatus;
+};
+
+export type MeetingActionSummary = {
+    id: string;
+    title: string;
+    owner: string | null;
+    due_on: string | null;
+    status: ActionItemStatus;
+};
+
+export type ExpenseStatus =
+    | 'submitted'
+    | 'approved'
+    | 'rejected'
+    | 'paid'
+    | 'verified';
+
+export type ExternalAccountType = 'bank' | 'mobile_money' | 'cash';
+
+export type ReconciliationStatus =
+    | 'draft'
+    | 'submitted'
+    | 'confirmed'
+    | 'rejected'
+    | 'locked';
+
+export type ExternalAccount = {
+    id: string;
+    name: string;
+    type: ExternalAccountType;
+    institution: string | null;
+    masked_identifier: string;
+    is_active: boolean;
+};
+
+export type ExternalAccountOption = {
+    id: string;
+    name: string;
+    masked_identifier: string;
+};
+
+export type PeriodOption = {
+    id: string;
+    label: string;
+};
+
+export type ExpenseRow = {
+    id: string;
+    reference: string;
+    purpose: string;
+    category: string;
+    payee: string;
+    amount: number;
+    incurred_on: string;
+    status: ExpenseStatus;
+    requested_by: string | null;
+    approved_by: string | null;
+    verified_by: string | null;
+    rejection_reason: string | null;
+    can_approve: boolean;
+    can_pay: boolean;
+    can_verify: boolean;
+};
+
+export type ReconciliationRow = {
+    id: string;
+    period: string;
+    account: string | null;
+    opening_balance: number;
+    statement_closing_balance: number;
+    expected_closing_balance: number;
+    difference: number;
+    status: ReconciliationStatus;
+    prepared_by: string | null;
+    can_submit: boolean;
+    can_confirm: boolean;
+    can_lock: boolean;
 };
 
 export type MembershipStatusHistory = {

@@ -24,13 +24,9 @@ final readonly class VerifyPayment
     {
         // Maker-checker: enforced here as well as in the policy, so the rule
         // holds for any caller (job, command, MCP request) and not only HTTP.
-        if ($payment->recorded_by_member_id === $verifier->id) {
-            throw new InvalidArgumentException('A payment cannot be verified by the member who recorded it.');
-        }
+        throw_if($payment->recorded_by_member_id === $verifier->id, InvalidArgumentException::class, 'A payment cannot be verified by the member who recorded it.');
 
-        if ($payment->status !== PaymentStatus::Submitted) {
-            throw new InvalidArgumentException('Only a submitted payment can be verified.');
-        }
+        throw_if($payment->status !== PaymentStatus::Submitted, InvalidArgumentException::class, 'Only a submitted payment can be verified.');
 
         return DB::transaction(function () use ($payment, $verifier, $ipAddress): Payment {
             $before = $payment->toArray();

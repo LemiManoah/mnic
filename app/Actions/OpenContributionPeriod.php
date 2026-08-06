@@ -30,9 +30,7 @@ final readonly class OpenContributionPeriod
             ->where('month', $month)
             ->exists();
 
-        if ($exists) {
-            throw new InvalidArgumentException("A contribution period for {$year}-{$month} already exists.");
-        }
+        throw_if($exists, InvalidArgumentException::class, sprintf('A contribution period for %d-%d already exists.', $year, $month));
 
         // The amount is snapshotted onto the period and each obligation, so a
         // later settings change never rewrites history.
@@ -82,9 +80,7 @@ final readonly class OpenContributionPeriod
     {
         $version = Setting::query()->where('key', $key)->first()?->currentVersion();
 
-        if ($version === null) {
-            throw new RuntimeException("Missing club setting [{$key}].");
-        }
+        throw_if($version === null, RuntimeException::class, sprintf('Missing club setting [%s].', $key));
 
         return (int) $version->value;
     }

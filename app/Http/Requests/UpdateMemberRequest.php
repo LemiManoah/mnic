@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\ClubPosition;
 use App\Models\Member;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 final class UpdateMemberRequest extends FormRequest
 {
@@ -30,6 +32,7 @@ final class UpdateMemberRequest extends FormRequest
         return [
             'member_number' => ['required', 'string', 'max:255', Rule::unique(Member::class)->ignore($member->id)],
             'full_name' => ['required', 'string', 'max:255'],
+            'position' => ['nullable', new Enum(ClubPosition::class)],
             'phone' => ['required', 'string', 'max:255'],
             'emergency_contact' => ['nullable', 'string', 'max:255'],
             'referred_by_member_id' => ['nullable', 'string', Rule::exists(Member::class, 'id')],

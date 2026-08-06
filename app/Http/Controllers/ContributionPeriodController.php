@@ -8,6 +8,7 @@ use App\Actions\OpenContributionPeriod;
 use App\Http\Requests\OpenContributionPeriodRequest;
 use App\Models\ContributionPeriod;
 use App\Models\Member;
+use App\Models\MemberObligation;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
@@ -43,7 +44,7 @@ final readonly class ContributionPeriodController
             'obligations' => $contributionPeriod->obligations()
                 ->with('member')
                 ->get()
-                ->map(fn ($obligation): array => [
+                ->map(fn (MemberObligation $obligation): array => [
                     'id' => $obligation->id,
                     'member_name' => $obligation->member->full_name,
                     'member_number' => $obligation->member->member_number,

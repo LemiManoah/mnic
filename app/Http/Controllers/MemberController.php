@@ -48,13 +48,13 @@ final readonly class MemberController
             // are passed explicitly below.
             'member' => $member->makeHidden(['user', 'referredBy']),
             'referredByName' => $member->referredBy?->full_name,
+            'position' => $member->position?->label(),
             'currentRole' => $member->user?->getRoleNames()->first(),
             'email' => $canUpdate ? $member->user?->email : null,
             'canUpdate' => $canUpdate,
             'canViewActivity' => $canViewActivity,
             'statusHistories' => $member->statusHistories()
-                ->orderByDesc('effective_date')
-                ->orderByDesc('created_at')
+                ->latest('effective_date')->latest()
                 ->get(),
             'obligations' => $member->obligations()
                 ->with('contributionPeriod')

@@ -347,10 +347,12 @@ export default function PaymentIndex({
                                             payment.evidence.map((file) => (
                                                 <a
                                                     key={file.id}
-                                                    href={showEvidence({
-                                                        payment: payment.id,
-                                                        evidence: file.id,
-                                                    }).url}
+                                                    href={
+                                                        showEvidence({
+                                                            payment: payment.id,
+                                                            evidence: file.id,
+                                                        }).url
+                                                    }
                                                     className="block text-sm underline underline-offset-4"
                                                 >
                                                     {file.original_name}

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Carbon\CarbonInterface;
 use Database\Factories\PaymentEvidenceFactory;
+use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,14 +23,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
  */
+#[Table(name: 'payment_evidence')]
 final class PaymentEvidence extends Model
 {
     /** @use HasFactory<PaymentEvidenceFactory> */
     use HasFactory;
 
     use HasUuids;
-
-    protected $table = 'payment_evidence';
 
     /**
      * @return array<string, string>
