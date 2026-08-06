@@ -368,7 +368,11 @@ export default function ExpenseIndex({
 }: {
     expenses: Paginated<ExpenseRow>;
     canRequest: boolean;
-    filters: { search: string | null; status: string | null; category: string | null };
+    filters: {
+        search: string | null;
+        status: string | null;
+        category: string | null;
+    };
     statusOptions: Option[];
     categoryOptions: Option[];
     externalAccounts: ExternalAccountOption[];

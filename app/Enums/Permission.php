@@ -37,6 +37,7 @@ enum Permission: string
 
     // Contributions...
     case ContributionPeriodsCreate = 'contribution_periods.create';
+    case ObligationsAdjust = 'obligations.adjust';
     case PaymentsReview = 'payments.review';
     case PaymentsViewEvidence = 'payments.view_evidence';
 
@@ -77,6 +78,7 @@ enum Permission: string
             self::UsersManage => 'Create and manage login accounts',
             self::PositionsManage => 'Appoint and transfer club offices',
             self::ContributionPeriodsCreate => 'Open contribution periods',
+            self::ObligationsAdjust => 'Waive or cancel obligations',
             self::PaymentsReview => 'Verify or reject payments',
             self::PaymentsViewEvidence => 'View any payment evidence',
             self::MeetingsCreate => 'Schedule meetings',

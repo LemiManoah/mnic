@@ -15,6 +15,7 @@ use App\Http\Controllers\MeetingAttendanceController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MeetingMinutesController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\MemberObligationAdjustmentController;
 use App\Http\Controllers\MemberRoleController;
 use App\Http\Controllers\MemberStatusController;
 use App\Http\Controllers\MonthlyReportController;
@@ -64,6 +65,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('contribution-periods', [ContributionPeriodController::class, 'index'])->name('contribution-period.index');
     Route::post('contribution-periods', [ContributionPeriodController::class, 'store'])->name('contribution-period.store');
     Route::get('contribution-periods/{contributionPeriod}', [ContributionPeriodController::class, 'show'])->name('contribution-period.show');
+    Route::put('member-obligations/{memberObligation}/adjustment', [MemberObligationAdjustmentController::class, 'update'])->name('member-obligation-adjustment.update');
 
     // Payments...
     Route::get('payments', [PaymentController::class, 'index'])->name('payment.index');

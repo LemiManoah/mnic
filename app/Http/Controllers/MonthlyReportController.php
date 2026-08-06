@@ -47,13 +47,20 @@ final readonly class MonthlyReportController
             ->latest()
             ->first();
 
-        $expected = (int) MemberObligation::query()
+        $activeObligations = MemberObligation::query()
             ->where('contribution_period_id', $contributionPeriod->id)
-            ->sum('amount');
+            ->whereNotIn('status', [
+                ObligationStatus::Waived->value,
+                ObligationStatus::Cancelled->value,
+            ]);
 
-        $collected = (int) MemberObligation::query()
-            ->where('contribution_period_id', $contributionPeriod->id)
-            ->sum('amount_paid');
+        $expected = (int) (clone $activeObligations)->sum('amount');
+
+        $collected = (int) (clone $activeObligations)->sum('amount_paid');
+
+        $outstanding = (int) (clone $activeObligations)
+            ->get()
+            ->sum(fn (MemberObligation $obligation): int => $obligation->outstanding());
 
         return Inertia::render('monthly-report/show', [
             'period' => [
@@ -64,7 +71,7 @@ final readonly class MonthlyReportController
             'contributions' => [
                 'expected' => $expected,
                 'collected' => $collected,
-                'outstanding' => $expected - $collected,
+                'outstanding' => $outstanding,
                 'members_in_arrears' => MemberObligation::query()
                     ->where('contribution_period_id', $contributionPeriod->id)
                     ->whereIn('status', [

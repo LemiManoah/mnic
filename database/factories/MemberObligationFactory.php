@@ -26,6 +26,9 @@ final class MemberObligationFactory extends Factory
             'amount' => 60000,
             'amount_paid' => 0,
             'status' => ObligationStatus::Unpaid,
+            'adjusted_by_member_id' => null,
+            'adjusted_at' => null,
+            'adjustment_reason' => null,
         ];
     }
 

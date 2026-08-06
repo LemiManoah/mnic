@@ -58,6 +58,7 @@ final class RolePermissionSeeder extends Seeder
 
         'treasurer' => [
             PermissionEnum::ContributionPeriodsCreate,
+            PermissionEnum::ObligationsAdjust,
             PermissionEnum::PaymentsViewEvidence,
             PermissionEnum::ExpensesCreate,
             PermissionEnum::ExpensesPay,

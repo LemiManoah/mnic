@@ -21,6 +21,9 @@ test('to array', function (): void {
             'status',
             'created_at',
             'updated_at',
+            'adjusted_by_member_id',
+            'adjusted_at',
+            'adjustment_reason',
         ]);
 });
 
@@ -40,6 +43,23 @@ it('never reports a negative outstanding amount', function (): void {
     ]);
 
     expect($obligation->outstanding())->toBe(0);
+});
+
+it('reports no outstanding amount for waived or cancelled obligations', function (): void {
+    $waived = MemberObligation::factory()->create([
+        'amount' => 60000,
+        'amount_paid' => 0,
+        'status' => ObligationStatus::Waived,
+    ]);
+
+    $cancelled = MemberObligation::factory()->create([
+        'amount' => 60000,
+        'amount_paid' => 0,
+        'status' => ObligationStatus::Cancelled,
+    ]);
+
+    expect($waived->outstanding())->toBe(0)
+        ->and($cancelled->outstanding())->toBe(0);
 });
 
 it('belongs to a period and a member and has allocations', function (): void {

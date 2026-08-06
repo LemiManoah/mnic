@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\OpenContributionPeriod;
+use App\Enums\ObligationStatus;
 use App\Http\Requests\OpenContributionPeriodRequest;
 use App\Models\ContributionPeriod;
 use App\Models\Member;
@@ -25,7 +26,12 @@ final readonly class ContributionPeriodController
         return Inertia::render('contribution-period/index', [
             'periods' => ContributionPeriod::query()
                 ->withCount('obligations')
-                ->withSum('obligations as expected_total', 'amount')
+                ->withSum([
+                    'obligations as expected_total' => fn ($query) => $query->whereNotIn('status', [
+                        ObligationStatus::Waived->value,
+                        ObligationStatus::Cancelled->value,
+                    ]),
+                ], 'amount')
                 ->withSum('obligations as collected_total', 'amount_paid')
                 ->orderByDesc('year')
                 ->orderByDesc('month')
@@ -34,7 +40,7 @@ final readonly class ContributionPeriodController
         ]);
     }
 
-    public function show(ContributionPeriod $contributionPeriod): Response
+    public function show(ContributionPeriod $contributionPeriod, #[CurrentUser] User $user): Response
     {
         Gate::authorize('view', $contributionPeriod);
 
@@ -52,6 +58,8 @@ final readonly class ContributionPeriodController
                     'amount_paid' => $obligation->amount_paid,
                     'outstanding' => $obligation->outstanding(),
                     'status' => $obligation->status,
+                    'adjustment_reason' => $obligation->adjustment_reason,
+                    'can_adjust' => $user->can('adjust', $obligation),
                 ]),
         ]);
     }

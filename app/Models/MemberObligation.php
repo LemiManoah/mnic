@@ -20,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int $amount
  * @property-read int $amount_paid
  * @property-read ObligationStatus $status
+ * @property-read string|null $adjusted_by_member_id
+ * @property-read CarbonInterface|null $adjusted_at
+ * @property-read string|null $adjustment_reason
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
  */
@@ -42,6 +45,9 @@ final class MemberObligation extends Model
             'amount' => 'integer',
             'amount_paid' => 'integer',
             'status' => ObligationStatus::class,
+            'adjusted_by_member_id' => 'string',
+            'adjusted_at' => 'datetime',
+            'adjustment_reason' => 'string',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -71,8 +77,20 @@ final class MemberObligation extends Model
         return $this->hasMany(PaymentAllocation::class);
     }
 
+    /**
+     * @return BelongsTo<Member, $this>
+     */
+    public function adjustedByMember(): BelongsTo
+    {
+        return $this->belongsTo(Member::class, 'adjusted_by_member_id');
+    }
+
     public function outstanding(): int
     {
+        if (! $this->status->isSettleable()) {
+            return 0;
+        }
+
         return max($this->amount - $this->amount_paid, 0);
     }
 }

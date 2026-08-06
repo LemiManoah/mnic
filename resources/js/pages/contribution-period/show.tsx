@@ -1,7 +1,21 @@
-import { Head } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
+import { useState } from 'react';
+import MemberObligationAdjustmentController from '@/actions/App/Http/Controllers/MemberObligationAdjustmentController';
 import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import {
     Table,
     TableBody,
@@ -10,6 +24,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { formatUgx } from '@/lib/money';
@@ -35,6 +50,100 @@ const STATUS_VARIANT: Record<
     cancelled: 'outline',
 };
 
+const ADJUSTABLE_STATUSES = ['waived', 'cancelled'] as const;
+
+function AdjustObligationDialog({
+    obligation,
+}: {
+    obligation: PeriodObligation;
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                    Adjust
+                </Button>
+            </DialogTrigger>
+
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Adjust obligation</DialogTitle>
+                    <DialogDescription>
+                        {obligation.member_name} - this records a waive or
+                        cancellation reason in the audit log.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <Form
+                    {...MemberObligationAdjustmentController.update.form(
+                        obligation.id,
+                    )}
+                    options={{ preserveScroll: true }}
+                    onSuccess={() => setOpen(false)}
+                    resetOnSuccess
+                    className="space-y-4"
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <div className="grid gap-2">
+                                <Label
+                                    htmlFor={`adjust-status-${obligation.id}`}
+                                >
+                                    Status
+                                </Label>
+                                <select
+                                    id={`adjust-status-${obligation.id}`}
+                                    name="status"
+                                    required
+                                    defaultValue="waived"
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                                >
+                                    {ADJUSTABLE_STATUSES.map((status) => (
+                                        <option key={status} value={status}>
+                                            {status}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.status} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label
+                                    htmlFor={`adjust-reason-${obligation.id}`}
+                                >
+                                    Reason
+                                </Label>
+                                <Textarea
+                                    id={`adjust-reason-${obligation.id}`}
+                                    name="reason"
+                                    required
+                                    rows={4}
+                                />
+                                <InputError message={errors.reason} />
+                            </div>
+
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={processing}>
+                                    Save adjustment
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function ContributionPeriodShow({
     period,
     label,
@@ -55,9 +164,16 @@ export default function ContributionPeriodShow({
         },
     ];
 
-    const expected = obligations.reduce((sum, o) => sum + o.amount, 0);
+    const expected = obligations.reduce(
+        (sum, o) =>
+            sum +
+            (o.status === 'waived' || o.status === 'cancelled'
+                ? 0
+                : o.amount),
+        0,
+    );
     const collected = obligations.reduce((sum, o) => sum + o.amount_paid, 0);
-    const outstanding = expected - collected;
+    const outstanding = obligations.reduce((sum, o) => sum + o.outstanding, 0);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -113,6 +229,7 @@ export default function ContributionPeriodShow({
                                 <TableHead>Paid</TableHead>
                                 <TableHead>Outstanding</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead />
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -143,6 +260,19 @@ export default function ContributionPeriodShow({
                                         >
                                             {obligation.status}
                                         </Badge>
+                                        {obligation.adjustment_reason && (
+                                            <span className="block text-xs text-muted-foreground">
+                                                {obligation.adjustment_reason}
+                                            </span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {obligation.can_adjust &&
+                                            obligation.amount_paid === 0 && (
+                                                <AdjustObligationDialog
+                                                    obligation={obligation}
+                                                />
+                                            )}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -150,7 +280,7 @@ export default function ContributionPeriodShow({
                             {obligations.length === 0 && (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={6}
+                                        colSpan={7}
                                         className="py-6 text-center text-muted-foreground"
                                     >
                                         No obligations in this period.

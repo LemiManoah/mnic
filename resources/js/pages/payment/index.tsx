@@ -474,8 +474,7 @@ export default function PaymentIndex({
                                                                 payment.id,
                                                             )}
                                                             options={{
-                                                                preserveScroll:
-                                                                    true,
+                                                                preserveScroll: true,
                                                             }}
                                                         >
                                                             {({

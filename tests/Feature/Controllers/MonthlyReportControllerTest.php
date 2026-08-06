@@ -29,6 +29,8 @@ it('lists monthly report periods for authenticated members', function (): void {
 it('shows the monthly transparency report with contributions cash and reconciliation state', function (): void {
     $actor = memberWithRole(ClubRole::Member);
     $member = Member::factory()->create(['full_name' => 'Report Member']);
+    $waivedMember = Member::factory()->create();
+    $cancelledMember = Member::factory()->create();
     $period = ContributionPeriod::factory()->forMonth(2026, 8)->create();
 
     MemberObligation::factory()->create([
@@ -37,6 +39,22 @@ it('shows the monthly transparency report with contributions cash and reconcilia
         'amount' => 60000,
         'amount_paid' => 45000,
         'status' => ObligationStatus::PartiallyPaid,
+    ]);
+
+    MemberObligation::factory()->create([
+        'member_id' => $waivedMember->id,
+        'contribution_period_id' => $period->id,
+        'amount' => 60000,
+        'amount_paid' => 0,
+        'status' => ObligationStatus::Waived,
+    ]);
+
+    MemberObligation::factory()->create([
+        'member_id' => $cancelledMember->id,
+        'contribution_period_id' => $period->id,
+        'amount' => 60000,
+        'amount_paid' => 0,
+        'status' => ObligationStatus::Cancelled,
     ]);
 
     Payment::factory()->create([

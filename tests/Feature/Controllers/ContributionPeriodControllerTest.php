@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\ClubRole;
+use App\Enums\ObligationStatus;
 use App\Models\ContributionPeriod;
 use App\Models\Member;
 use App\Models\MemberObligation;
@@ -28,6 +29,35 @@ it('shows the treasurer they can open a period', function (): void {
         ->assertInertia(fn ($page) => $page->where('canOpenPeriod', true));
 });
 
+it('excludes waived and cancelled obligations from period expected totals', function (): void {
+    $actor = memberWithRole(ClubRole::Member);
+    $period = ContributionPeriod::factory()->forMonth(2026, 9)->create();
+
+    MemberObligation::factory()->create([
+        'contribution_period_id' => $period->id,
+        'amount' => 60000,
+        'status' => ObligationStatus::Unpaid,
+    ]);
+
+    MemberObligation::factory()->create([
+        'contribution_period_id' => $period->id,
+        'amount' => 60000,
+        'status' => ObligationStatus::Waived,
+    ]);
+
+    MemberObligation::factory()->create([
+        'contribution_period_id' => $period->id,
+        'amount' => 60000,
+        'status' => ObligationStatus::Cancelled,
+    ]);
+
+    $response = $this->actingAs($actor->user)->get(route('contribution-period.index'));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('periods.data.0.expected_total', 60000));
+});
+
 it('shows a period with its obligations', function (): void {
     $actor = memberWithRole(ClubRole::Member);
     $period = ContributionPeriod::factory()->forMonth(2026, 9)->create();
@@ -44,7 +74,25 @@ it('shows a period with its obligations', function (): void {
         ->assertInertia(fn ($page) => $page->component('contribution-period/show')
             ->where('label', '2026-09')
             ->has('obligations', 1)
-            ->where('obligations.0.member_name', 'Ledger Member'));
+            ->where('obligations.0.member_name', 'Ledger Member')
+            ->where('obligations.0.adjustment_reason', null)
+            ->where('obligations.0.can_adjust', false));
+});
+
+it('shows treasurers which period obligations can be adjusted', function (): void {
+    $actor = memberWithRole(ClubRole::Treasurer);
+    $period = ContributionPeriod::factory()->forMonth(2026, 9)->create();
+
+    MemberObligation::factory()->create([
+        'contribution_period_id' => $period->id,
+        'status' => ObligationStatus::Unpaid,
+    ]);
+
+    $response = $this->actingAs($actor->user)->get(route('contribution-period.show', $period));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('obligations.0.can_adjust', true));
 });
 
 it('allows a treasurer to open a period', function (): void {

@@ -81,6 +81,8 @@ export type PeriodObligation = {
     amount_paid: number;
     outstanding: number;
     status: ObligationStatus;
+    adjustment_reason: string | null;
+    can_adjust: boolean;
 };
 
 export type LedgerObligation = {
