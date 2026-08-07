@@ -446,7 +446,7 @@ export default function ExpenseIndex({
                                     <TableCell className="text-muted-foreground">
                                         {expense.requested_by ?? '—'}
                                     </TableCell>
-                                    <TableCell className="max-w-72 whitespace-normal align-top">
+                                    <TableCell className="max-w-72 align-top whitespace-normal">
                                         <Badge
                                             variant={
                                                 STATUS_VARIANT[expense.status]

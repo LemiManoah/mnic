@@ -22,10 +22,11 @@ the whole point of having it.
 10. [Walkthroughs — Chief Whip (verifier)](#10-walkthroughs--chief-whip-verifier)
 11. [Walkthroughs — Secretary](#11-walkthroughs--secretary)
 12. [Walkthroughs — Chairperson](#12-walkthroughs--chairperson)
-13. [Walkthroughs — Administrator](#13-walkthroughs--administrator)
-14. [Things the system will refuse to do](#14-things-the-system-will-refuse-to-do)
-15. [What does not work yet](#15-what-does-not-work-yet)
-16. [Common questions](#16-common-questions)
+13. [Walkthroughs — Elections and positions](#13-walkthroughs--elections-and-positions)
+14. [Walkthroughs — Administrator](#14-walkthroughs--administrator)
+15. [Things the system will refuse to do](#15-things-the-system-will-refuse-to-do)
+16. [What does not work yet](#16-what-does-not-work-yet)
+17. [Common questions](#17-common-questions)
 
 ---
 
@@ -62,7 +63,7 @@ you and hands you a temporary password. Change it once you are in
 (your name in the bottom-left corner → **Settings** → **Password**).
 
 **If you forget your password**, ask the Administrator. Do not expect the
-"Forgot password" email to reach you yet — see §15.
+"Forgot password" email to reach you yet — see §16.
 
 > **As a new member,** I want the Secretary to hand me a login, **so that** I
 > can see my own contribution record from day one.
@@ -173,6 +174,12 @@ two-person rule.
 | Record attendance and minutes | — | — | — | ✅ | — | ✅ |
 | Raise a proposal, open/close voting | — | — | — | ✅ | ✅ | ✅ |
 | Vote | ✅ (if eligible) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Request a payment reversal | — | ✅ | ✅ | — | — | ✅ |
+| **Approve** a reversal | — | — | ✅ | — | — | ✅ |
+| Waive or cancel an obligation | — | ✅ | — | — | — | ✅ |
+| Start an election, open/close its voting | — | — | — | ✅ | ✅ | ✅ |
+| Vote in an election | ✅ (if eligible) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Transfer an office directly | — | — | — | — | ✅ | ✅ |
 | Assign actions | — | — | — | ✅ | ✅ | ✅ |
 | Update **your own** action | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Read the audit log | — | — | — | ✅ | — | ✅ |
@@ -364,6 +371,25 @@ The chain is four steps and at least three people:
 
 Only at step 4 does the expense count as fully settled.
 
+### Excusing somebody a month
+
+> **As the Treasurer,** I want to record that the club agreed to excuse a
+> member, **so that** the arrears figures reflect what was actually decided
+> rather than showing a debt nobody intends to collect.
+
+Open the member's profile → the **Contributions** tab → the month in question →
+**Adjust**. You can mark it:
+
+- **Waived** — the club agreed to let it go. The obligation is settled without
+  money changing hands.
+- **Cancelled** — it should never have been raised in the first place.
+
+Either way a reason is required, and both the reason and your name go on the
+record. Only an unpaid or part-paid month can be adjusted; one that is already
+settled cannot.
+
+This is a club decision, not a treasurer's discretion. Get it minuted first.
+
 ### Closing the month
 
 > **As Treasurer,** I want to prove the club's records match the real bank
@@ -381,7 +407,7 @@ This is the most important thing you do all month.
 4. **If the difference is zero**, hand it to a Chief Whip to confirm.
 5. **If there is a difference**, it must be explained before anyone can confirm
    it. Each explanation is recorded as a reconciliation item and must be marked
-   resolved. *(See §15 — the screen for this is not built yet.)*
+   resolved. *(See §16 — the screen for this is not built yet.)*
 6. Once a Chief Whip has confirmed it, **Lock** the month.
 
 **Locking is permanent.** A locked month cannot be edited by anyone, including
@@ -410,7 +436,29 @@ the actual Mobile Money statement. Then:
   in the audit log, and the member can see it.
 
 **If the Verify button is missing**, it is because you recorded that payment
-yourself. Ask the other whip.
+yourself, or because the payment has already been dealt with. Both are working
+as intended — the button only appears when there is genuinely a decision for you
+to make.
+
+### Undoing a payment that was verified in error
+
+> **As a Chief Whip,** I want a verified payment to be reversible, **but** I do
+> not want any one officer able to quietly undo income on their own.
+
+It takes two people, the same as verifying did.
+
+1. Open the payment → **Request reversal**, and give a reason. The payment moves
+   to **reversal pending**. It still counts for now — nothing has been undone.
+2. A **different** officer opens it and either **Approves** or **Declines** the
+   reversal.
+
+On approval the system unwinds everything the verification did: the money is
+taken back off each month it settled, and those obligations return to unpaid or
+part-paid. The payment ends as **reversed**, with both names, both timestamps
+and the reason on the record.
+
+Nothing is deleted. A reversed payment stays visible for good — that is the
+point of a reversal rather than a delete.
 
 ### Verifying expenses
 
@@ -539,7 +587,71 @@ Owners update their own actions. You can update anybody's.
 
 ---
 
-## 13. Walkthroughs — Administrator
+## 13. Walkthroughs — Elections and positions
+
+An **office** is something the membership votes you into. It is not the same as
+what the software lets you click — see §4 if that distinction is not yet clear.
+
+### "Who holds what office?"
+
+**Positions** shows every office and who currently holds it, plus the full
+history underneath: who held it before, from when to when, and what put them
+there. Nobody is ever quietly removed from the record. If an office is empty it
+says **Vacant**.
+
+### Running an election
+
+*Story: the Mobilizer's term is up. Shaun, the Secretary, runs the election.*
+
+1. **Positions** → **Elections** → **Start an election**. Pick the office, give
+   it a title, say what the office involves.
+2. It opens as a **draft**. Nothing is visible to voters yet.
+3. **Nominate** each candidate, with a short manifesto — a sentence or two on
+   why they should get it. A member can only be nominated once per election.
+4. When nominations are done, **Open voting** and set a closing time.
+
+The moment voting opens, the electorate is **frozen**. Whoever is an active
+member at that instant is who may vote — nobody added afterwards can join the
+ballot, and nobody removed afterwards loses their vote. This is what stops an
+election being influenced by who joined last week.
+
+### "There is an election on — how do I vote?"
+
+**Positions** → the open election. You see each candidate and their manifesto,
+and you pick **one**. That is the whole ballot.
+
+You cannot see the running tally while voting is open. This is deliberate: if
+you could watch it, late voters would vote tactically rather than honestly.
+
+You vote once. There is no changing it afterwards, so read the manifestos first.
+
+### Closing an election
+
+The Secretary or Chairperson closes it. At that moment:
+
+- The counts become visible, per candidate.
+- The winner is recorded, along with an outcome note explaining the result.
+- **The office transfers automatically.** The previous holder's term is closed
+  off with today's date, the winner's begins, and both stay in the history.
+
+If the sitting holder wins, nothing moves — they simply continue, and the
+election is recorded as a confirmation.
+
+### Handing an office over without an election
+
+Sometimes an office changes hands between elections — somebody resigns, or
+travels. **Positions** → **Transfer office**: pick the office, the new holder,
+the date it takes effect, and a reason.
+
+The reason is required. An office moving without an explanation is exactly the
+kind of thing the club will want to look back at.
+
+You cannot transfer an office to the person who already holds it, and one person
+cannot hold two offices at once — taking a new one closes the old.
+
+---
+
+## 14. Walkthroughs — Administrator
 
 ### Club settings
 
@@ -595,7 +707,7 @@ what address.
 
 ---
 
-## 14. Things the system will refuse to do
+## 15. Things the system will refuse to do
 
 When you hit one of these, the system is working correctly.
 
@@ -608,9 +720,15 @@ When you hit one of these, the system is working correctly.
 | Record a payment for another member | Only the Treasurer may |
 | Enter a payment reference already used | Prevents double-entry |
 | Enter a zero or negative payment | Meaningless |
-| Vote twice on one proposal | One member, one vote |
+| Vote twice on one proposal or election | One member, one vote |
 | Vote when you were not on the frozen list | Electorate fixed when voting opened |
 | Vote after the closing time | Voting closed |
+| Approve a reversal you requested yourself | Two-person rule |
+| Reverse a payment that is not verified | There is nothing to unwind |
+| Adjust a month that is already settled | Only unpaid or part-paid months |
+| Stand twice in the same election | One candidate entry per member |
+| Transfer an office to whoever already holds it | Nothing would change |
+| Hold two offices at once | Taking a new one closes the old |
 | Edit confirmed minutes | Confirmed minutes are the official record |
 | Edit a locked month | Locked is permanent |
 | Confirm a reconciliation with unexplained differences | Every difference must be documented |
@@ -621,50 +739,50 @@ When you hit one of these, the system is working correctly.
 
 ---
 
-## 15. What does not work yet
+## 16. What does not work yet
 
 Being straight about the gaps, so nobody is caught out.
 
 **No notifications of any kind.** Nothing emails or messages you. Not when a
 period opens, not when your payment is verified, not when a vote is closing, not
 when your action is overdue. Everyone must remember to log in. This is the
-biggest practical gap.
+biggest practical gap, and until it is closed the club still needs its WhatsApp
+group for reminders.
 
 **Arrears are not flagged automatically.** The system knows the grace period
 ended, but nothing sweeps through and marks people overdue. You can see who owes
 what, but it will not chase anyone.
 
-**A verified payment cannot be reversed.** If a payment is verified in error,
-there is currently no way to undo it in the app. Do not verify until you have
-checked.
-
-**Obligations cannot be waived or cancelled.** If the club agrees to excuse
-somebody a month, there is no button for it yet.
-
 **Reconciliation differences cannot be explained on screen.** The behaviour
 exists, but the form to add and resolve a difference item is not built. In
 practice this means **a reconciliation with a difference cannot currently be
-confirmed** — only clean ones can go through.
+confirmed** — only clean ones can go through. If the bank and the system
+disagree, the month cannot be closed until this is built.
 
 **No receipts, no downloads.** Nothing prints. No PDF receipt when a payment is
 verified, no CSV export, no member statement to hand over. Everything must be
 read on screen.
 
-**Club positions cannot be transferred.** Positions show on profiles but there
-is no way to hand an office over when someone is elected, and no history of who
-held what.
+**Some things cannot be cancelled or withdrawn.** A proposal cannot be
+withdrawn once created, a meeting cannot be cancelled, and an action item cannot
+be cancelled — only completed or left open. Confirmed minutes cannot be
+corrected at all; a mistake in them has to be handled by a motion at the next
+meeting.
 
 **Password reset does not work for seeded accounts.** Most seeded email
 addresses are placeholders that cannot receive mail. Ask the Administrator.
 
 **The seeded data is not real.** Every seeded account shares the password
-`password`, phone numbers are sequential placeholders, and some members are
-named "Member 11 (placeholder)". All of this must be replaced with real details
-before the club relies on it.
+`password` and phone numbers are sequential placeholders. The names, offices and
+the year's contribution history are realistic so the screens make sense, but
+none of the money is. All of this must be replaced before the club relies on it.
+
+**Only one club.** The system holds Musuwa Nation and nothing else. There is no
+way to run a second club alongside it.
 
 ---
 
-## 16. Common questions
+## 17. Common questions
 
 **"I paid but the dashboard still says I owe."**
 Your payment is recorded but not yet verified. It only counts once a Chief Whip

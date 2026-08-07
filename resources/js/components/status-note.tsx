@@ -14,12 +14,12 @@ export default function StatusNote({ children }: StatusNoteProps) {
             <TooltipTrigger asChild>
                 <span
                     tabIndex={0}
-                    className="mt-1 block max-w-64 whitespace-normal break-words text-xs leading-5 text-muted-foreground outline-none"
+                    className="mt-1 block max-w-64 text-xs leading-5 break-words whitespace-normal text-muted-foreground outline-none"
                 >
                     {children}
                 </span>
             </TooltipTrigger>
-            <TooltipContent className="max-w-80 whitespace-normal break-words leading-5">
+            <TooltipContent className="max-w-80 leading-5 break-words whitespace-normal">
                 {children}
             </TooltipContent>
         </Tooltip>
