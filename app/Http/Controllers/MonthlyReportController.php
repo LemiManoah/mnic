@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\AdjustmentStatus;
 use App\Enums\ExpenseStatus;
 use App\Enums\ObligationStatus;
 use App\Enums\PaymentStatus;
@@ -12,6 +13,7 @@ use App\Models\ContributionPeriod;
 use App\Models\Expense;
 use App\Models\MemberObligation;
 use App\Models\Payment;
+use App\Models\PeriodAdjustment;
 use App\Models\Reconciliation;
 use App\Services\ClubCashPosition;
 use Inertia\Inertia;
@@ -84,6 +86,21 @@ final readonly class MonthlyReportController
                 'inflows' => $cashPosition->inflowsForPeriod($contributionPeriod),
                 'outflows' => $cashPosition->outflowsForPeriod($contributionPeriod),
             ],
+            // Approved corrections to this month, shown apart from the figures
+            // they correct. The month's signed-off numbers stay as signed off;
+            // an adjustment is visible as an adjustment.
+            'adjustments' => PeriodAdjustment::query()
+                ->with('requestedByMember')
+                ->where('contribution_period_id', $contributionPeriod->id)
+                ->where('status', AdjustmentStatus::Approved->value)
+                ->latest('reviewed_at')
+                ->get()
+                ->map(fn (PeriodAdjustment $adjustment): array => [
+                    'id' => $adjustment->id,
+                    'amount' => $adjustment->amount,
+                    'reason' => $adjustment->reason,
+                    'requested_by' => $adjustment->requestedByMember?->full_name,
+                ]),
             'reconciliation' => $reconciliation === null ? null : [
                 'status' => $reconciliation->status,
                 'is_confirmed' => in_array($reconciliation->status, [

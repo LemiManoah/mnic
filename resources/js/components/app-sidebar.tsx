@@ -10,6 +10,7 @@ import {
     IconGavel,
     IconHistory,
     IconKey,
+    IconPencilCog,
     IconReceipt,
     IconReportMoney,
     IconRosette,
@@ -43,6 +44,7 @@ import { index as memberIndex } from '@/routes/member';
 import { index as monthlyReportIndex } from '@/routes/monthly-report';
 import { index as notificationIndex } from '@/routes/notification';
 import { index as paymentIndex } from '@/routes/payment';
+import { index as periodAdjustmentIndex } from '@/routes/period-adjustment';
 import { index as positionIndex } from '@/routes/position';
 import { index as positionPollIndex } from '@/routes/position-poll';
 import { index as proposalIndex } from '@/routes/proposal';
@@ -81,6 +83,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: 'Reconciliation',
             url: reconciliationIndex().url,
             icon: IconScale,
+        },
+        {
+            title: 'Adjustments',
+            url: periodAdjustmentIndex().url,
+            icon: IconPencilCog,
         },
     ];
 

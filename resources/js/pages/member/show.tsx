@@ -21,6 +21,7 @@ import {
     index as memberIndex,
     show as showMember,
 } from '@/routes/member';
+import { memberStatement } from '@/routes/export';
 import type {
     AuditLog,
     BreadcrumbItem,
@@ -111,13 +112,23 @@ export default function MemberShow({
                         </Badge>
                     </div>
 
-                    {canUpdate && (
-                        <Button asChild>
-                            <Link href={editMember(member.id)}>
-                                Edit member
-                            </Link>
+                    <div className="flex items-center gap-2">
+                        {/* A plain anchor, not Inertia's Link: this returns a
+                            file download rather than a page. */}
+                        <Button asChild variant="outline">
+                            <a href={memberStatement(member.id).url}>
+                                Download statement
+                            </a>
                         </Button>
-                    )}
+
+                        {canUpdate && (
+                            <Button asChild>
+                                <Link href={editMember(member.id)}>
+                                    Edit member
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <Tabs defaultValue="overview">

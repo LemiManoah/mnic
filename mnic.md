@@ -200,13 +200,20 @@ built** — the same stale-doc problem as §5. Corrected record:
   and `corrects_minute_id`, leaves the confirmed version untouched, and the
   correction must itself be confirmed before it is official.
 
-Still outstanding:
-
-- **Controlled adjustment after a month is locked.** A locked month is correctly
-  immutable, but the proposal's "controlled adjustment" path does not exist.
+- **Controlled adjustment after a locked month** — built 7 August.
+  `period_adjustments` records a correction *beside* a closed month rather than
+  editing it: the locked reconciliation and the signed-off figures are never
+  touched, and the correction carries its own reason and its own pair of
+  signatures. Two new permissions, `adjustments.request` (treasurer) and
+  `adjustments.approve` (financial verifier), so neither officer can do both
+  halves. Approved adjustments appear on the monthly report under "Corrections
+  after this month closed", deliberately apart from the figures they correct.
+  Only *closed* months accept them — an open month can be fixed at source, and
+  routing that through a two-signature process would teach people to treat the
+  process as a formality.
 
 **Exit:** every state in every status enum is reachable, or documented as
-deliberately unreachable.
+deliberately unreachable. ✅
 
 ## M3 — Set the clock and the mail correctly ✅ code done
 
@@ -260,11 +267,15 @@ Laravel's behaviour, not a bug: `NotificationSender` dispatches one
 `SendQueuedNotifications` per notifiable per channel. Expect the `database` job
 to finish in milliseconds and the `mail` job to take about a second.
 
-Still outstanding:
+Filled in on 7 August: **expense approved/rejected** (one notification, not two
+— the requester's question is the same either way), **position polls** now
+mirror proposals for both opening and closing, and **`ContributionDueSoon`**
+nudges in the three days *before* the grace period closes. Deliberately narrow:
+reminding somebody daily from the 1st is how a reminder becomes noise.
 
-- Expense approved/rejected and monthly report published have no notification.
-- Position polls notify nobody — only proposals do.
-- Nothing yet warns that a deadline is *approaching*, only that it has passed.
+There is no "monthly report published" notification because the report has no
+publishing step — it is readable all along. **`MonthClosed`** replaces it, fired
+when the month is locked, which is the moment its figures actually become final.
 
 **In-app inbox** (built 7 August): `/notifications` lists a member's own
 notifications with an unread filter, per-item and mark-all-read, and a badge in
@@ -278,16 +289,28 @@ addresses: in-app is the only channel that reaches them today.
 
 **Exit:** a member learns they are in arrears without anyone telling them.
 
-## M5 — Reports, exports and receipts
+## M5 — Reports, exports and receipts ✅ built 7 August
 
-The monthly transparency report exists on screen. **There is no CSV or PDF
-output anywhere in the application.** Still missing from §16 of the proposal:
-member statement, contribution collection report, arrears ageing, expense
-report, governance report, audit export. No receipt is produced when a payment
-is verified.
+Seven CSV exports through a shared streaming `CsvExport` service — member
+statement, arrears ageing (with days overdue, which is what turns a list into a
+priority order), contribution collection per month, verified payments, expenses,
+governance, audit log. Streamed rather than built in memory, with a UTF-8 BOM so
+Excel does not mangle names.
+
+**CSV, not PDF, and that was a constraint as much as a choice.** No PDF library
+is installed and adding a dependency needs approval, so the payment receipt is a
+print-styled Blade page the browser saves as PDF instead. It works, it needs no
+package, and the view is already the template if server-generated PDFs are
+wanted later. If the club wants proper PDFs, that is a `composer require` and a
+conversation.
+
+Two access rules worth keeping: a member may always export **their own**
+statement but needs officer permission for anyone else's, and the payments
+export contains **verified payments only** — an unverified payment is not
+evidence of anything and has no place in a file people will treat as the record.
 
 **Exit:** the club can hand a member a statement and a monthly report without
-opening the application.
+opening the application. ✅
 
 ## M6 — Pilot and hardening
 

@@ -32,6 +32,7 @@ import {
     index as periodIndex,
     show as showPeriod,
 } from '@/routes/contribution-period';
+import { contributions as exportContributions } from '@/routes/export';
 import type {
     BreadcrumbItem,
     ContributionPeriod,
@@ -178,11 +179,19 @@ export default function ContributionPeriodShow({
             <Head title={`Period ${label}`} />
 
             <AdminLayout>
-                <Heading
-                    variant="small"
-                    title={`Contribution period ${label}`}
-                    description={`Due ${period.due_date.slice(0, 10)} · grace ends ${period.grace_ends_on.slice(0, 10)} · ${formatUgx(period.amount)} per member`}
-                />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <Heading
+                        variant="small"
+                        title={`Contribution period ${label}`}
+                        description={`Due ${period.due_date.slice(0, 10)} · grace ends ${period.grace_ends_on.slice(0, 10)} · ${formatUgx(period.amount)} per member`}
+                    />
+
+                    <Button asChild variant="outline">
+                        <a href={exportContributions(period.id).url}>
+                            Export this month
+                        </a>
+                    </Button>
+                </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">
                     <Card>

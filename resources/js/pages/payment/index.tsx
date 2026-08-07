@@ -33,7 +33,9 @@ import {
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { formatUgx } from '@/lib/money';
+import { payments as exportPayments } from '@/routes/export';
 import { index as paymentIndex } from '@/routes/payment';
+import { show as paymentReceipt } from '@/routes/payment-receipt';
 import { show as showEvidence } from '@/routes/payment-evidence';
 import type {
     BreadcrumbItem,
@@ -356,17 +358,23 @@ export default function PaymentIndex({
             <Head title="Payments" />
 
             <AdminLayout>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <Heading
                         variant="small"
                         title="Payments"
                         description="Recorded contributions awaiting or completed verification"
                     />
 
-                    <RecordPaymentDialog
-                        members={members}
-                        methodOptions={methodOptions}
-                    />
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="outline">
+                            <a href={exportPayments().url}>Export verified</a>
+                        </Button>
+
+                        <RecordPaymentDialog
+                            members={members}
+                            methodOptions={methodOptions}
+                        />
+                    </div>
                 </div>
 
                 <ListFilters
@@ -465,6 +473,27 @@ export default function PaymentIndex({
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
+                                        {payment.status === 'verified' && (
+                                            <Button
+                                                asChild
+                                                size="sm"
+                                                variant="ghost"
+                                                className="mb-1"
+                                            >
+                                                <a
+                                                    href={
+                                                        paymentReceipt(
+                                                            payment.id,
+                                                        ).url
+                                                    }
+                                                    target="_blank"
+                                                    rel="noopener"
+                                                >
+                                                    Receipt
+                                                </a>
+                                            </Button>
+                                        )}
+
                                         {(payment.can_review ||
                                             payment.can_request_reversal ||
                                             payment.can_decide_reversal) && (

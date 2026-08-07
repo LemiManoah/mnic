@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
+import { arrears as exportArrears } from '@/routes/export';
 import { index as memberIndex, show as showMember } from '@/routes/member';
 import type { BreadcrumbItem, Member, Option, Paginated } from '@/types';
 
@@ -174,14 +175,20 @@ export default function MemberIndex({
             <Head title="Members" />
 
             <AdminLayout>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <Heading
                         variant="small"
                         title="Members"
                         description="The club's member roster"
                     />
 
-                    {canCreate && <AddMemberDialog />}
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="outline">
+                            <a href={exportArrears().url}>Arrears ageing</a>
+                        </Button>
+
+                        {canCreate && <AddMemberDialog />}
+                    </div>
                 </div>
 
                 <ListFilters

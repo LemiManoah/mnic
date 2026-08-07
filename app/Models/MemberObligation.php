@@ -7,7 +7,6 @@ namespace App\Models;
 use App\Enums\ObligationStatus;
 use Carbon\CarbonInterface;
 use Database\Factories\MemberObligationFactory;
-use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,6 +33,25 @@ final class MemberObligation extends Model
     use HasFactory;
 
     use HasUuids;
+
+    /**
+     * Obligations still owing after the grace period closed.
+     *
+     * Deliberately a plain static query rather than an Eloquent scope. The
+     * three tools in this repo cannot agree on scopes: larastan does not
+     * resolve `#[Scope]`-attributed methods, Rector insists `scopeX` methods be
+     * protected, and the Pest strict preset forbids protected methods on
+     * models. A named query method sidesteps all three and reads no worse.
+     *
+     * @return Builder<self>
+     */
+    public static function overdueQuery(): Builder
+    {
+        return self::query()
+            ->whereIn('status', [ObligationStatus::Unpaid->value, ObligationStatus::PartiallyPaid->value])
+            ->whereHas('contributionPeriod', fn (Builder $period): Builder => $period
+                ->whereDate('grace_ends_on', '<', today()));
+    }
 
     /**
      * @return array<string, string>
@@ -94,22 +112,7 @@ final class MemberObligation extends Model
             return false;
         }
 
-        return $this->contributionPeriod->grace_ends_on->isBefore(today());
-    }
-
-    /**
-     * Obligations still owing after the grace period closed.
-     *
-     * @param  Builder<self>  $query
-     * @return Builder<self>
-     */
-    #[Scope]
-    public function overdue(Builder $query): Builder
-    {
-        return $query
-            ->whereIn('status', [ObligationStatus::Unpaid->value, ObligationStatus::PartiallyPaid->value])
-            ->whereHas('contributionPeriod', fn (Builder $period): Builder => $period
-                ->whereDate('grace_ends_on', '<', today()));
+        return $this->contributionPeriod?->grace_ends_on->isBefore(today()) ?? false;
     }
 
     /**

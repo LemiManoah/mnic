@@ -8,6 +8,7 @@ use App\Enums\ContributionPeriodStatus;
 use App\Enums\ReconciliationStatus;
 use App\Models\Member;
 use App\Models\Reconciliation;
+use App\Notifications\MonthClosed;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -19,8 +20,10 @@ use InvalidArgumentException;
  */
 final readonly class CloseMonth
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -28,7 +31,7 @@ final readonly class CloseMonth
     {
         throw_if($reconciliation->status !== ReconciliationStatus::Confirmed, InvalidArgumentException::class, 'Only a confirmed reconciliation can be locked.');
 
-        return DB::transaction(function () use ($reconciliation, $actor, $ipAddress): Reconciliation {
+        $reconciliation = DB::transaction(function () use ($reconciliation, $actor, $ipAddress): Reconciliation {
             $before = $reconciliation->toArray();
 
             $reconciliation->update([
@@ -51,5 +54,16 @@ final readonly class CloseMonth
 
             return $reconciliation;
         });
+
+        // Closing is the moment a month's figures become final, so it is the
+        // event worth announcing. The report itself has no publishing step —
+        // it is readable all along.
+        $period = $reconciliation->contributionPeriod;
+
+        if ($period !== null) {
+            $this->notifyMembers->toActiveMembers(new MonthClosed($period));
+        }
+
+        return $reconciliation;
     }
 }

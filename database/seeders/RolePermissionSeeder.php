@@ -59,6 +59,9 @@ final class RolePermissionSeeder extends Seeder
         'treasurer' => [
             PermissionEnum::ContributionPeriodsCreate,
             PermissionEnum::ObligationsAdjust,
+            // The treasurer raises a correction to a closed month; a whip
+            // approves it. Neither can do both halves.
+            PermissionEnum::AdjustmentsRequest,
             PermissionEnum::PaymentsViewEvidence,
             PermissionEnum::ExpensesCreate,
             PermissionEnum::ExpensesPay,
@@ -69,6 +72,7 @@ final class RolePermissionSeeder extends Seeder
         ],
 
         'financial-verifier' => [
+            PermissionEnum::AdjustmentsApprove,
             PermissionEnum::PaymentsReview,
             PermissionEnum::PaymentsViewEvidence,
             PermissionEnum::ExpensesVerify,

@@ -10,14 +10,17 @@ use App\Models\Member;
 use App\Models\PositionPoll;
 use App\Models\PositionPollEligibleVoter;
 use App\Models\Setting;
+use App\Notifications\PositionPollVotingOpened;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
 final readonly class OpenPositionPollVoting
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -33,7 +36,7 @@ final readonly class OpenPositionPollVoting
 
         $quorumPercent = $this->settingValue('quorum_percent');
 
-        return DB::transaction(function () use ($poll, $closesAt, $quorumPercent, $actor, $ipAddress): PositionPoll {
+        $poll = DB::transaction(function () use ($poll, $closesAt, $quorumPercent, $actor, $ipAddress): PositionPoll {
             $before = $poll->toArray();
 
             // Freeze the electorate: everyone active right now, and nobody else,
@@ -72,6 +75,21 @@ final readonly class OpenPositionPollVoting
 
             return $poll;
         });
+
+        // The frozen roll, not the active roll — same people at this instant,
+        // but only the snapshot stays true if somebody joins or leaves while
+        // voting is open.
+        $this->notifyMembers->handle(
+            $poll->eligibleVoters()
+                ->with('member.user')
+                ->get()
+                ->map(fn (PositionPollEligibleVoter $eligible) => $eligible->member)
+                ->filter()
+                ->values(),
+            new PositionPollVotingOpened($poll),
+        );
+
+        return $poll;
     }
 
     private function settingValue(string $key): int

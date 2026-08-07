@@ -430,3 +430,18 @@ export type NotificationRow = {
     read_at: string | null;
     created_at: string | null;
 };
+
+export type AdjustmentStatus = 'pending' | 'approved' | 'rejected';
+
+export type PeriodAdjustmentRow = {
+    id: string;
+    period: string;
+    /** Signed: negative corrects an overstatement. */
+    amount: number;
+    reason: string;
+    status: AdjustmentStatus;
+    requested_by: string | null;
+    reviewed_by: string | null;
+    rejection_reason: string | null;
+    can_review: boolean;
+};

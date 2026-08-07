@@ -34,6 +34,17 @@ trait ClubNotification
     /** @var list<int> */
     public array $backoff = [10, 30, 60, 120];
 
+    abstract public function subjectLine(): string;
+
+    /**
+     * @return list<string>
+     */
+    abstract public function bodyLines(): array;
+
+    abstract public function actionUrl(): string;
+
+    abstract public function actionLabel(): string;
+
     /**
      * @return list<string>
      */
@@ -68,15 +79,4 @@ trait ClubNotification
             'url' => $this->actionUrl(),
         ];
     }
-
-    abstract public function subjectLine(): string;
-
-    /**
-     * @return list<string>
-     */
-    abstract public function bodyLines(): array;
-
-    abstract public function actionUrl(): string;
-
-    abstract public function actionLabel(): string;
 }

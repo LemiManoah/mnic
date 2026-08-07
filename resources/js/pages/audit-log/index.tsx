@@ -2,9 +2,11 @@ import { Head } from '@inertiajs/react';
 import Heading from '@/components/heading';
 import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
+import { Button } from '@/components/ui/button';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { index as auditLogIndex } from '@/routes/audit-log';
+import { auditLog as exportAuditLog } from '@/routes/export';
 import type { AuditLog, BreadcrumbItem, Option, Paginated } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -29,11 +31,17 @@ export default function AuditLogIndex({
 
             <AdminLayout>
                 <div className="space-y-6">
-                    <Heading
-                        variant="small"
-                        title="Audit log"
-                        description="Append-only record of sensitive activity"
-                    />
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <Heading
+                            variant="small"
+                            title="Audit log"
+                            description="Append-only record of sensitive activity"
+                        />
+
+                        <Button asChild variant="outline">
+                            <a href={exportAuditLog().url}>Export</a>
+                        </Button>
+                    </div>
 
                     <ListFilters
                         url={auditLogIndex().url}

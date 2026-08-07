@@ -7,13 +7,17 @@ use App\Enums\ClubRole;
 use App\Enums\ObligationStatus;
 use App\Models\ActionItem;
 use App\Models\ContributionPeriod;
-use App\Models\Member;
 use App\Models\MemberObligation;
+use App\Models\PositionPoll;
+use App\Models\PositionPollEligibleVoter;
+use App\Models\PositionPollVote;
 use App\Models\Proposal;
 use App\Models\ProposalEligibleVoter;
 use App\Models\Vote;
 use App\Notifications\ActionItemOverdue;
+use App\Notifications\ContributionDueSoon;
 use App\Notifications\ObligationOverdue;
+use App\Notifications\PositionPollVotingClosing;
 use App\Notifications\ProposalVotingClosing;
 use Illuminate\Support\Facades\Notification;
 
@@ -159,6 +163,70 @@ it('ignores a vote that is not closing soon', function (): void {
     Notification::assertNotSentTo($member->user, ProposalVotingClosing::class);
 });
 
+it('nudges a member before the grace period closes', function (): void {
+    $member = memberWithRole(ClubRole::Member);
+
+    $period = ContributionPeriod::factory()->create([
+        'grace_ends_on' => today()->addDays(2),
+    ]);
+
+    MemberObligation::factory()->create([
+        'contribution_period_id' => $period->id,
+        'member_id' => $member->id,
+        'status' => ObligationStatus::Unpaid,
+    ]);
+
+    $this->artisan('club:sweep-overdue')->assertSuccessful();
+
+    Notification::assertSentTo($member->user, ContributionDueSoon::class);
+});
+
+it('does not nudge weeks ahead of the deadline', function (): void {
+    $member = memberWithRole(ClubRole::Member);
+
+    $period = ContributionPeriod::factory()->create([
+        'grace_ends_on' => today()->addWeeks(3),
+    ]);
+
+    MemberObligation::factory()->create([
+        'contribution_period_id' => $period->id,
+        'member_id' => $member->id,
+        'status' => ObligationStatus::Unpaid,
+    ]);
+
+    $this->artisan('club:sweep-overdue')->assertSuccessful();
+
+    // Reminding somebody every day from the 1st is how a reminder becomes
+    // background noise.
+    Notification::assertNotSentTo($member->user, ContributionDueSoon::class);
+});
+
+it('reminds only the members who have not voted in a closing election', function (): void {
+    $voted = memberWithRole(ClubRole::Member);
+    $silent = memberWithRole(ClubRole::Member);
+
+    $poll = PositionPoll::factory()->open()->create([
+        'closes_at' => now()->addHours(6),
+    ]);
+
+    foreach ([$voted, $silent] as $member) {
+        PositionPollEligibleVoter::factory()->create([
+            'position_poll_id' => $poll->id,
+            'member_id' => $member->id,
+        ]);
+    }
+
+    PositionPollVote::factory()->create([
+        'position_poll_id' => $poll->id,
+        'member_id' => $voted->id,
+    ]);
+
+    $this->artisan('club:sweep-overdue')->assertSuccessful();
+
+    Notification::assertSentTo($silent->user, PositionPollVotingClosing::class);
+    Notification::assertNotSentTo($voted->user, PositionPollVotingClosing::class);
+});
+
 it('derives overdue from the grace date rather than a stored flag', function (): void {
     $past = ContributionPeriod::factory()->create(['grace_ends_on' => today()->subDay()]);
     $future = ContributionPeriod::factory()->create(['grace_ends_on' => today()->addDay()]);
@@ -181,5 +249,5 @@ it('derives overdue from the grace date rather than a stored flag', function ():
     expect($overdue->isOverdue())->toBeTrue()
         ->and($current->isOverdue())->toBeFalse()
         ->and($settled->isOverdue())->toBeFalse()
-        ->and(MemberObligation::query()->overdue()->pluck('id')->all())->toBe([$overdue->id]);
+        ->and(MemberObligation::overdueQuery()->pluck('id')->all())->toBe([$overdue->id]);
 });

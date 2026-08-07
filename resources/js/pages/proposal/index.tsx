@@ -33,6 +33,7 @@ import {
     index as proposalIndex,
     show as showProposal,
 } from '@/routes/proposal';
+import { governance as exportGovernance } from '@/routes/export';
 import type {
     BreadcrumbItem,
     MeetingOption,
@@ -162,14 +163,22 @@ export default function ProposalIndex({
             <Head title="Proposals" />
 
             <AdminLayout>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <Heading
                         variant="small"
                         title="Proposals"
                         description="Motions put to the membership and their results"
                     />
 
-                    {canCreate && <CreateProposalDialog meetings={meetings} />}
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="outline">
+                            <a href={exportGovernance().url}>Export</a>
+                        </Button>
+
+                        {canCreate && (
+                            <CreateProposalDialog meetings={meetings} />
+                        )}
+                    </div>
                 </div>
 
                 <ListFilters

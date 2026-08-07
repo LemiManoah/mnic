@@ -810,6 +810,10 @@ When you hit one of these, the system is working correctly.
 | Approve a reversal you requested yourself | Two-person rule |
 | Reverse a payment that is not verified | There is nothing to unwind |
 | Adjust a month that is already settled | Only unpaid or part-paid months |
+| Edit a closed month | Raise an adjustment beside it instead |
+| Adjust a month that is still open | Fix it at source; adjustments are for closed months |
+| Approve an adjustment you raised yourself | Two-person rule |
+| Download another member's statement | Only officers may |
 | Stand twice in the same election | One candidate entry per member |
 | Transfer an office to whoever already holds it | Nothing would change |
 | Hold two offices at once | Taking a new one closes the old |
@@ -844,13 +848,10 @@ to be loaded first.
 reports being published, and elections opening send nothing. Reminders also only
 go out *after* a deadline has passed — nothing warns you it is approaching.
 
-**No receipts, no downloads.** Nothing prints. No PDF receipt when a payment is
-verified, no CSV export, no member statement to hand over. Everything must be
-read on screen.
-
-**A locked month cannot be adjusted.** Once a month is closed it is final. If
-something genuinely needs correcting afterwards there is no controlled way to do
-it, so check carefully before closing.
+**Downloads are spreadsheets, not PDFs.** Everything exports as CSV, which opens
+in Excel and Google Sheets. The one exception is the payment receipt, which is a
+printable page — use your browser's **Print → Save as PDF**. There is no
+server-generated PDF yet.
 
 **Password reset does not work for seeded accounts.** Most seeded email
 addresses are placeholders that cannot receive mail. Ask the Administrator.

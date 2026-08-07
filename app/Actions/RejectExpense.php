@@ -7,13 +7,16 @@ namespace App\Actions;
 use App\Enums\ExpenseStatus;
 use App\Models\Expense;
 use App\Models\Member;
+use App\Notifications\ExpenseDecided;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class RejectExpense
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -23,7 +26,7 @@ final readonly class RejectExpense
 
         throw_if($expense->status !== ExpenseStatus::Submitted, InvalidArgumentException::class, 'Only a submitted expense can be rejected.');
 
-        return DB::transaction(function () use ($expense, $approver, $reason, $ipAddress): Expense {
+        DB::transaction(function () use ($expense, $approver, $reason, $ipAddress): Expense {
             $before = $expense->toArray();
 
             $expense->update([
@@ -44,5 +47,18 @@ final readonly class RejectExpense
 
             return $expense;
         });
+
+        // The requester needs the reason more than anyone: they are the only
+        // person who can act on it.
+        $expense->loadMissing('requestedByMember.user');
+
+        if ($expense->requestedByMember !== null) {
+            $this->notifyMembers->handle(
+                [$expense->requestedByMember],
+                new ExpenseDecided($expense),
+            );
+        }
+
+        return $expense;
     }
 }

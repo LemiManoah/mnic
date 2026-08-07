@@ -75,11 +75,19 @@ function Stat({ label, value }: { label: string; value: string }) {
     );
 }
 
+type ReportAdjustment = {
+    id: string;
+    amount: number;
+    reason: string;
+    requested_by: string | null;
+};
+
 export default function MonthlyReportShow({
     period,
     contributions,
     cash,
     reconciliation,
+    adjustments,
     payments,
     expenses,
 }: {
@@ -87,6 +95,7 @@ export default function MonthlyReportShow({
     contributions: Contributions;
     cash: Cash;
     reconciliation: ReconciliationSummary | null;
+    adjustments: ReportAdjustment[];
     payments: ReportPayment[];
     expenses: ReportExpense[];
 }) {
@@ -180,6 +189,48 @@ export default function MonthlyReportShow({
                         )}
                     </CardContent>
                 </Card>
+
+                {adjustments.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                Corrections after this month closed
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                            <p className="text-muted-foreground">
+                                The figures above are the ones the club signed
+                                off and have not been changed. These corrections
+                                were approved afterwards by two officers.
+                            </p>
+
+                            {adjustments.map((adjustment) => (
+                                <div
+                                    key={adjustment.id}
+                                    className="flex flex-wrap items-baseline justify-between gap-2 rounded-md border p-3"
+                                >
+                                    <div>
+                                        <div>{adjustment.reason}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            Raised by{' '}
+                                            {adjustment.requested_by ??
+                                                'an officer'}
+                                        </div>
+                                    </div>
+                                    <span
+                                        className={
+                                            adjustment.amount < 0
+                                                ? 'font-medium text-destructive'
+                                                : 'font-medium'
+                                        }
+                                    >
+                                        {formatUgx(adjustment.amount)}
+                                    </span>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
 
                 <Card>
                     <CardHeader>

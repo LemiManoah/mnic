@@ -10,6 +10,7 @@ use App\Http\Controllers\ExpenseApprovalController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpensePaymentController;
 use App\Http\Controllers\ExpenseVerificationController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ExternalAccountController;
 use App\Http\Controllers\MeetingAttendanceController;
 use App\Http\Controllers\MeetingCancellationController;
@@ -25,9 +26,12 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationReadController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentEvidenceController;
+use App\Http\Controllers\PaymentReceiptController;
 use App\Http\Controllers\PaymentRejectionController;
 use App\Http\Controllers\PaymentReversalController;
 use App\Http\Controllers\PaymentVerificationController;
+use App\Http\Controllers\PeriodAdjustmentController;
+use App\Http\Controllers\PeriodAdjustmentReviewController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\PositionPollCandidateController;
 use App\Http\Controllers\PositionPollController;
@@ -163,6 +167,29 @@ Route::middleware('auth')->group(function (): void {
     Route::put('reconciliations/{reconciliation}/items/{item}', [ReconciliationItemController::class, 'update'])
         ->scopeBindings()
         ->name('reconciliation-item.update');
+
+    // Corrections to a month that has already been closed. The locked
+    // reconciliation is never edited; an adjustment sits beside it.
+    Route::get('period-adjustments', [PeriodAdjustmentController::class, 'index'])->name('period-adjustment.index');
+    Route::post('period-adjustments', [PeriodAdjustmentController::class, 'store'])->name('period-adjustment.store');
+    Route::put('period-adjustments/{periodAdjustment}/review', [PeriodAdjustmentReviewController::class, 'update'])
+        ->name('period-adjustment-review.update');
+    Route::delete('period-adjustments/{periodAdjustment}/review', [PeriodAdjustmentReviewController::class, 'destroy'])
+        ->name('period-adjustment-review.destroy');
+
+    // Downloadable records. CSV throughout — it opens anywhere and needs no
+    // library; the receipt is a printable page the browser saves as PDF.
+    Route::get('exports/members/{member}/statement', [ExportController::class, 'memberStatement'])
+        ->name('export.member-statement');
+    Route::get('exports/arrears', [ExportController::class, 'arrears'])->name('export.arrears');
+    Route::get('exports/contributions/{contributionPeriod}', [ExportController::class, 'contributions'])
+        ->name('export.contributions');
+    Route::get('exports/payments', [ExportController::class, 'payments'])->name('export.payments');
+    Route::get('exports/expenses', [ExportController::class, 'expenses'])->name('export.expenses');
+    Route::get('exports/governance', [ExportController::class, 'governance'])->name('export.governance');
+    Route::get('exports/audit-log', [ExportController::class, 'auditLog'])->name('export.audit-log');
+    Route::get('payments/{payment}/receipt', [PaymentReceiptController::class, 'show'])
+        ->name('payment-receipt.show');
 
     // Monthly transparency report...
     Route::get('reports/monthly', [MonthlyReportController::class, 'index'])->name('monthly-report.index');

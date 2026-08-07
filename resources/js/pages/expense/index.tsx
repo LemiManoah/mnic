@@ -34,6 +34,7 @@ import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { formatUgx } from '@/lib/money';
 import { index as expenseIndex } from '@/routes/expense';
+import { expenses as exportExpenses } from '@/routes/export';
 import type {
     BreadcrumbItem,
     ExpenseRow,
@@ -383,18 +384,24 @@ export default function ExpenseIndex({
             <Head title="Expenses" />
 
             <AdminLayout>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <Heading
                         variant="small"
                         title="Expenses"
                         description="Requested, approved, paid and verified outflows"
                     />
 
-                    {canRequest && (
-                        <RequestExpenseDialog
-                            categoryOptions={categoryOptions}
-                        />
-                    )}
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="outline">
+                            <a href={exportExpenses().url}>Export</a>
+                        </Button>
+
+                        {canRequest && (
+                            <RequestExpenseDialog
+                                categoryOptions={categoryOptions}
+                            />
+                        )}
+                    </div>
                 </div>
 
                 <ListFilters

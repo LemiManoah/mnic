@@ -2,23 +2,35 @@
 
 declare(strict_types=1);
 
+use App\Actions\ApproveExpense;
+use App\Actions\CloseMonth;
 use App\Actions\CreateActionItem;
 use App\Actions\NotifyMembers;
+use App\Actions\OpenPositionPollVoting;
 use App\Actions\OpenProposalVoting;
 use App\Actions\PublishMinutes;
+use App\Actions\RejectExpense;
 use App\Actions\RejectPayment;
 use App\Actions\ScheduleMeeting;
 use App\Actions\VerifyPayment;
+use App\Enums\ClubRole;
 use App\Enums\MemberStatus;
+use App\Models\Expense;
 use App\Models\Meeting;
 use App\Models\Member;
 use App\Models\Payment;
+use App\Models\PositionPoll;
+use App\Models\PositionPollCandidate;
 use App\Models\Proposal;
+use App\Models\Reconciliation;
 use App\Notifications\ActionItemAssigned;
+use App\Notifications\ExpenseDecided;
 use App\Notifications\MeetingScheduled;
 use App\Notifications\MinutesPublished;
+use App\Notifications\MonthClosed;
 use App\Notifications\PaymentRejected;
 use App\Notifications\PaymentVerified;
+use App\Notifications\PositionPollVotingOpened;
 use App\Notifications\ProposalVotingOpened;
 use Illuminate\Support\Facades\Notification;
 
@@ -27,7 +39,7 @@ beforeEach(function (): void {
 });
 
 it('tells a member when their payment is verified', function (): void {
-    $member = memberWithRole(App\Enums\ClubRole::Member);
+    $member = memberWithRole(ClubRole::Member);
     $recorder = Member::factory()->create();
     $verifier = Member::factory()->create();
 
@@ -42,7 +54,7 @@ it('tells a member when their payment is verified', function (): void {
 });
 
 it('tells a member why their payment was rejected', function (): void {
-    $member = memberWithRole(App\Enums\ClubRole::Member);
+    $member = memberWithRole(ClubRole::Member);
     $recorder = Member::factory()->create();
     $verifier = Member::factory()->create();
 
@@ -72,8 +84,8 @@ it('does not fall over notifying a member who has no login', function (): void {
 });
 
 it('tells the active roll when a meeting is scheduled', function (): void {
-    $withLogin = memberWithRole(App\Enums\ClubRole::Member);
-    $inactive = memberWithRole(App\Enums\ClubRole::Member, ['status' => MemberStatus::Exited]);
+    $withLogin = memberWithRole(ClubRole::Member);
+    $inactive = memberWithRole(ClubRole::Member, ['status' => MemberStatus::Exited]);
 
     resolve(ScheduleMeeting::class)->handle([
         'reference' => 'MTG-2026-050',
@@ -87,7 +99,7 @@ it('tells the active roll when a meeting is scheduled', function (): void {
 
 it('tells the frozen electorate when voting opens', function (): void {
     seedClubSettings();
-    $voter = memberWithRole(App\Enums\ClubRole::Member);
+    $voter = memberWithRole(ClubRole::Member);
     $proposal = Proposal::factory()->create();
 
     resolve(OpenProposalVoting::class)
@@ -97,8 +109,8 @@ it('tells the frozen electorate when voting opens', function (): void {
 });
 
 it('tells only the owner when an action is assigned', function (): void {
-    $owner = memberWithRole(App\Enums\ClubRole::Member);
-    $bystander = memberWithRole(App\Enums\ClubRole::Member);
+    $owner = memberWithRole(ClubRole::Member);
+    $bystander = memberWithRole(ClubRole::Member);
 
     resolve(CreateActionItem::class)->handle([
         'title' => 'Collect the land search report',
@@ -110,7 +122,7 @@ it('tells only the owner when an action is assigned', function (): void {
 });
 
 it('sends nothing when an action has no owner', function (): void {
-    memberWithRole(App\Enums\ClubRole::Member);
+    memberWithRole(ClubRole::Member);
 
     resolve(CreateActionItem::class)->handle(['title' => 'Unowned note']);
 
@@ -118,7 +130,7 @@ it('sends nothing when an action has no owner', function (): void {
 });
 
 it('tells the active roll when minutes are published', function (): void {
-    $member = memberWithRole(App\Enums\ClubRole::Member);
+    $member = memberWithRole(ClubRole::Member);
     $meeting = Meeting::factory()->create();
 
     resolve(PublishMinutes::class)->handle($meeting, 'The meeting opened at 18:00.');
@@ -126,8 +138,45 @@ it('tells the active roll when minutes are published', function (): void {
     Notification::assertSentTo($member->user, MinutesPublished::class);
 });
 
+it('tells the requester when an expense is approved or declined', function (): void {
+    $requester = memberWithRole(ClubRole::Member);
+    $chair = Member::factory()->create();
+
+    $approved = Expense::factory()->create(['requested_by_member_id' => $requester->id]);
+    resolve(ApproveExpense::class)->handle($approved, $chair);
+
+    $declined = Expense::factory()->create(['requested_by_member_id' => $requester->id]);
+    resolve(RejectExpense::class)->handle($declined, $chair, 'Not budgeted.');
+
+    Notification::assertSentToTimes($requester->user, ExpenseDecided::class, 2);
+});
+
+it('tells the active roll when a month is closed', function (): void {
+    $member = memberWithRole(ClubRole::Member);
+    $reconciliation = Reconciliation::factory()->confirmed()->create();
+
+    resolve(CloseMonth::class)->handle($reconciliation);
+
+    // The report has no publishing step, so closing is the moment the figures
+    // become final and therefore the event worth announcing.
+    Notification::assertSentTo($member->user, MonthClosed::class);
+});
+
+it('tells the frozen roll when an election opens', function (): void {
+    seedClubSettings();
+    $voter = memberWithRole(ClubRole::Member);
+    $poll = PositionPoll::factory()->create();
+
+    PositionPollCandidate::factory()->create(['position_poll_id' => $poll->id]);
+
+    resolve(OpenPositionPollVoting::class)
+        ->handle($poll, now()->addWeek()->toDateTimeString());
+
+    Notification::assertSentTo($voter->user, PositionPollVotingOpened::class);
+});
+
 it('stores the subject, body and link the inbox page reads', function (): void {
-    $member = memberWithRole(App\Enums\ClubRole::Member);
+    $member = memberWithRole(ClubRole::Member);
     $meeting = Meeting::factory()->create(['title' => 'Half-year review']);
 
     resolve(NotifyMembers::class)->handle([$member], new MeetingScheduled($meeting));
@@ -147,7 +196,7 @@ it('stores the subject, body and link the inbox page reads', function (): void {
 });
 
 it('sends each recipient once even when a member is listed twice', function (): void {
-    $member = memberWithRole(App\Enums\ClubRole::Member);
+    $member = memberWithRole(ClubRole::Member);
     $meeting = Meeting::factory()->create();
 
     resolve(NotifyMembers::class)->handle(
