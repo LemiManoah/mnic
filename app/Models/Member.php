@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -54,6 +55,31 @@ final class Member extends Model
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return HasOne<PositionHolding, $this>
+     */
+    public function currentPositionHolding(): HasOne
+    {
+        return $this->hasOne(PositionHolding::class)->whereNull('held_to');
+    }
+
+    /**
+     * @return HasMany<PositionHolding, $this>
+     */
+    public function positionHoldings(): HasMany
+    {
+        return $this->hasMany(PositionHolding::class);
+    }
+
+    public function currentPosition(): ?ClubPosition
+    {
+        $holding = $this->relationLoaded('currentPositionHolding')
+            ? $this->currentPositionHolding
+            : $this->currentPositionHolding()->first();
+
+        return $holding?->position ?? $this->position;
     }
 
     /**

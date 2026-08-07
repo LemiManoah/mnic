@@ -24,6 +24,7 @@ use App\Http\Controllers\PaymentEvidenceController;
 use App\Http\Controllers\PaymentRejectionController;
 use App\Http\Controllers\PaymentReversalController;
 use App\Http\Controllers\PaymentVerificationController;
+use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ProposalVotingController;
 use App\Http\Controllers\ReconciliationController;
@@ -60,6 +61,8 @@ Route::middleware('auth')->group(function (): void {
     Route::put('members/{member}', [MemberController::class, 'update'])->name('member.update');
     Route::put('members/{member}/status', [MemberStatusController::class, 'update'])->name('member-status.update');
     Route::put('members/{member}/role', [MemberRoleController::class, 'update'])->name('member-role.update');
+    Route::get('positions', [PositionController::class, 'index'])->name('position.index');
+    Route::post('positions', [PositionController::class, 'store'])->name('position.store');
 
     // Contribution Periods...
     Route::get('contribution-periods', [ContributionPeriodController::class, 'index'])->name('contribution-period.index');

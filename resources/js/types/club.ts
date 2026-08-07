@@ -198,6 +198,8 @@ export type Proposal = {
     meeting_id: string | null;
     title: string;
     description: string;
+    election_position: ClubPosition | null;
+    election_member_id: string | null;
     status: ProposalStatus;
     opened_at: string | null;
     closes_at: string | null;

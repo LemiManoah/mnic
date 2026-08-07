@@ -65,7 +65,7 @@ final readonly class MemberController
     {
         Gate::authorize('view', $member);
 
-        $member->loadMissing(['user', 'referredBy']);
+        $member->loadMissing(['user', 'referredBy', 'currentPositionHolding']);
 
         $canViewActivity = $user->can('viewAny', AuditLog::class);
         $canUpdate = $user->can('update', $member);
@@ -76,7 +76,7 @@ final readonly class MemberController
             // are passed explicitly below.
             'member' => $member->makeHidden(['user', 'referredBy']),
             'referredByName' => $member->referredBy?->full_name,
-            'position' => $member->position?->label(),
+            'position' => $member->currentPosition()?->label(),
             'currentRole' => $member->user?->getRoleNames()->first(),
             'email' => $canUpdate ? $member->user?->email : null,
             'canUpdate' => $canUpdate,

@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use App\Actions\CloseProposalVoting;
+use App\Enums\ClubPosition;
 use App\Enums\ProposalStatus;
 use App\Enums\VoteChoice;
 use App\Models\AuditLog;
 use App\Models\Member;
+use App\Models\PositionHolding;
 use App\Models\Proposal;
 use App\Models\Vote;
 
@@ -60,6 +62,36 @@ it('counts abstentions towards quorum but not towards approval', function (): vo
 
     expect($closed->status)->toBe(ProposalStatus::Passed)
         ->and($closed->outcome_note)->toContain('abstain 1');
+});
+
+it('transfers a position when an election proposal passes', function (): void {
+    $current = Member::factory()->create(['position' => ClubPosition::Chairperson]);
+    $successor = Member::factory()->create();
+
+    PositionHolding::factory()->create([
+        'member_id' => $current->id,
+        'position' => ClubPosition::Chairperson,
+        'held_from' => '2026-01-01',
+        'held_to' => null,
+    ]);
+
+    $proposal = Proposal::factory()->open(eligible: 5, quorum: 3)->create([
+        'election_position' => ClubPosition::Chairperson,
+        'election_member_id' => $successor->id,
+    ]);
+
+    castVotes($proposal, for: 3, against: 1, abstain: 0);
+
+    $closed = resolve(CloseProposalVoting::class)->handle($proposal, $current);
+
+    expect($closed->status)->toBe(ProposalStatus::Passed)
+        ->and($current->fresh()?->position)->toBeNull()
+        ->and($successor->fresh()?->position)->toBe(ClubPosition::Chairperson)
+        ->and(PositionHolding::query()
+            ->where('member_id', $successor->id)
+            ->where('elected_via_proposal_id', $proposal->id)
+            ->whereNull('held_to')
+            ->exists())->toBeTrue();
 });
 
 it('rejects a proposal where every vote is an abstention', function (): void {

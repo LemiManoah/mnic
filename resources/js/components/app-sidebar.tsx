@@ -11,6 +11,7 @@ import {
     IconKey,
     IconReceipt,
     IconReportMoney,
+    IconRosette,
     IconScale,
     IconSettings,
     IconUserShield,
@@ -40,6 +41,7 @@ import { index as meetingIndex } from '@/routes/meeting';
 import { index as memberIndex } from '@/routes/member';
 import { index as monthlyReportIndex } from '@/routes/monthly-report';
 import { index as paymentIndex } from '@/routes/payment';
+import { index as positionIndex } from '@/routes/position';
 import { index as proposalIndex } from '@/routes/proposal';
 import { index as reconciliationIndex } from '@/routes/reconciliation';
 import { index as settingIndex } from '@/routes/setting';
@@ -76,6 +78,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const documents = [
         { name: 'Meetings', url: meetingIndex().url, icon: IconCalendarEvent },
         { name: 'Proposals', url: proposalIndex().url, icon: IconGavel },
+        { name: 'Positions', url: positionIndex().url, icon: IconRosette },
         { name: 'Actions', url: actionItemIndex().url, icon: IconChecklist },
         {
             name: 'Monthly reports',

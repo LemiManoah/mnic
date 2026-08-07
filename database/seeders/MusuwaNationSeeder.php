@@ -23,6 +23,7 @@ use App\Models\ExternalAccount;
 use App\Models\Member;
 use App\Models\MembershipStatusHistory;
 use App\Models\Payment;
+use App\Models\PositionHolding;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -124,6 +125,20 @@ final class MusuwaNationSeeder extends Seeder
                     'effective_date' => self::FOUNDED_ON,
                 ],
             );
+
+            if (($definition['position'] ?? null) instanceof ClubPosition) {
+                PositionHolding::query()->firstOrCreate(
+                    [
+                        'member_id' => $member->id,
+                        'position' => $definition['position']->value,
+                        'held_to' => null,
+                    ],
+                    [
+                        'held_from' => self::FOUNDED_ON,
+                        'transfer_reason' => 'Founding office holder.',
+                    ],
+                );
+            }
 
             $user->syncRoles([($definition['role'] ?? ClubRole::Member)->value]);
         }

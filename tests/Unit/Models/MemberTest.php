@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Enums\ClubPosition;
 use App\Enums\MemberStatus;
 use App\Models\Member;
 use App\Models\MembershipStatusHistory;
+use App\Models\PositionHolding;
 use App\Models\User;
 
 test('to array', function (): void {
@@ -59,4 +61,16 @@ it('has many status histories', function (): void {
     MembershipStatusHistory::factory()->count(2)->create(['member_id' => $member->id]);
 
     expect($member->statusHistories)->toHaveCount(2);
+});
+
+it('reads the current position from the open holding', function (): void {
+    $member = Member::factory()->create(['position' => null]);
+
+    PositionHolding::factory()->create([
+        'member_id' => $member->id,
+        'position' => ClubPosition::Treasurer,
+        'held_to' => null,
+    ]);
+
+    expect($member->currentPosition())->toBe(ClubPosition::Treasurer);
 });

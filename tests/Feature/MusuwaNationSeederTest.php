@@ -13,6 +13,7 @@ use App\Models\Expense;
 use App\Models\Member;
 use App\Models\MembershipStatusHistory;
 use App\Models\Payment;
+use App\Models\PositionHolding;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\MusuwaNationSeeder;
@@ -54,7 +55,9 @@ it('places the named leadership in the right offices', function (): void {
 it('seeds every elected office exactly once', function (): void {
     foreach (ClubPosition::cases() as $position) {
         expect(Member::query()->where('position', $position->value)->count())
-            ->toBe(1, 'Expected exactly one '.$position->value);
+            ->toBe(1, 'Expected exactly one '.$position->value)
+            ->and(PositionHolding::query()->where('position', $position->value)->whereNull('held_to')->count())
+            ->toBe(1, 'Expected exactly one current holding for '.$position->value);
     }
 });
 

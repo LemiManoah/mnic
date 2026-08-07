@@ -77,9 +77,17 @@ final readonly class DashboardController
                 'due_date' => $latestPeriod->due_date->toDateString(),
                 'expected' => (int) MemberObligation::query()
                     ->where('contribution_period_id', $latestPeriod->id)
+                    ->whereNotIn('status', [
+                        ObligationStatus::Waived->value,
+                        ObligationStatus::Cancelled->value,
+                    ])
                     ->sum('amount'),
                 'collected' => (int) MemberObligation::query()
                     ->where('contribution_period_id', $latestPeriod->id)
+                    ->whereNotIn('status', [
+                        ObligationStatus::Waived->value,
+                        ObligationStatus::Cancelled->value,
+                    ])
                     ->sum('amount_paid'),
             ],
             'officer' => [

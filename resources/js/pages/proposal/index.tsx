@@ -35,6 +35,8 @@ import {
 import type {
     BreadcrumbItem,
     MeetingOption,
+    MemberOption,
+    Option,
     Paginated,
     Proposal,
     ProposalStatus,
@@ -55,7 +57,15 @@ const STATUS_VARIANT: Record<
     withdrawn: 'outline',
 };
 
-function CreateProposalDialog({ meetings }: { meetings: MeetingOption[] }) {
+function CreateProposalDialog({
+    meetings,
+    members,
+    positionOptions,
+}: {
+    meetings: MeetingOption[];
+    members: MemberOption[];
+    positionOptions: Option[];
+}) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -122,6 +132,57 @@ function CreateProposalDialog({ meetings }: { meetings: MeetingOption[] }) {
                                 <InputError message={errors.meeting_id} />
                             </div>
 
+                            <div className="grid gap-2">
+                                <Label htmlFor="election_position">
+                                    Election office (optional)
+                                </Label>
+                                <select
+                                    id="election_position"
+                                    name="election_position"
+                                    defaultValue=""
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                                >
+                                    <option value="">Not an election</option>
+                                    {positionOptions.map((option) => (
+                                        <option
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError
+                                    message={errors.election_position}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="election_member_id">
+                                    Candidate
+                                </Label>
+                                <select
+                                    id="election_member_id"
+                                    name="election_member_id"
+                                    defaultValue=""
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                                >
+                                    <option value="">None</option>
+                                    {members.map((member) => (
+                                        <option
+                                            key={member.id}
+                                            value={member.id}
+                                        >
+                                            {member.member_number} -{' '}
+                                            {member.full_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError
+                                    message={errors.election_member_id}
+                                />
+                            </div>
+
                             <DialogFooter>
                                 <Button
                                     type="button"
@@ -146,10 +207,14 @@ export default function ProposalIndex({
     proposals,
     canCreate,
     meetings,
+    members,
+    positionOptions,
 }: {
     proposals: Paginated<Proposal>;
     canCreate: boolean;
     meetings: MeetingOption[];
+    members: MemberOption[];
+    positionOptions: Option[];
 }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -163,7 +228,13 @@ export default function ProposalIndex({
                         description="Motions put to the membership and their results"
                     />
 
-                    {canCreate && <CreateProposalDialog meetings={meetings} />}
+                    {canCreate && (
+                        <CreateProposalDialog
+                            meetings={meetings}
+                            members={members}
+                            positionOptions={positionOptions}
+                        />
+                    )}
                 </div>
 
                 <div className="overflow-x-auto rounded-md border">

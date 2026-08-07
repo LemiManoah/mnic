@@ -22,6 +22,8 @@ final class ProposalFactory extends Factory
             'meeting_id' => null,
             'title' => fake()->sentence(5),
             'description' => fake()->paragraph(),
+            'election_position' => null,
+            'election_member_id' => null,
             'status' => ProposalStatus::Draft,
             'opened_at' => null,
             'closes_at' => null,

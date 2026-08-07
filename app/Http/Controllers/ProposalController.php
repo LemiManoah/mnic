@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\ProposalStatus;
 use App\Enums\VoteChoice;
+use App\Enums\ClubPosition;
+use App\Enums\MemberStatus;
 use App\Http\Requests\CreateProposalRequest;
 use App\Models\Meeting;
 use App\Models\Member;
@@ -33,6 +35,17 @@ final readonly class ProposalController
             'meetings' => Meeting::query()
                 ->orderByDesc('scheduled_for')
                 ->get(['id', 'reference', 'title']),
+            'members' => Member::query()
+                ->where('status', MemberStatus::Active->value)
+                ->orderBy('full_name')
+                ->get(['id', 'full_name', 'member_number']),
+            'positionOptions' => array_map(
+                static fn (ClubPosition $position): array => [
+                    'value' => $position->value,
+                    'label' => $position->label(),
+                ],
+                ClubPosition::cases(),
+            ),
         ]);
     }
 
@@ -40,10 +53,14 @@ final readonly class ProposalController
     {
         Gate::authorize('view', $proposal);
 
-        $proposal->loadMissing(['votes.member', 'meeting']);
+        $proposal->loadMissing(['votes.member', 'meeting', 'electionMember']);
 
         return Inertia::render('proposal/show', [
             'proposal' => $proposal,
+            'election' => $proposal->isElection() ? [
+                'position' => $proposal->election_position?->label(),
+                'member_name' => $proposal->electionMember?->full_name ?? __('Unknown member'),
+            ] : null,
             'canManageVoting' => $user->can('manageVoting', $proposal),
             'canVote' => $user->can('vote', $proposal),
             'tally' => [
