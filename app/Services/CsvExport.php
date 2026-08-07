@@ -22,7 +22,7 @@ final readonly class CsvExport
 {
     /**
      * @param  list<string>  $headings
-     * @param  iterable<int, list<string|int|null>>  $rows
+     * @param  iterable<int, array<int, string|int|null>>  $rows
      */
     public function stream(string $filename, array $headings, iterable $rows): StreamedResponse
     {

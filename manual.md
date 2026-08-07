@@ -848,10 +848,11 @@ to be loaded first.
 reports being published, and elections opening send nothing. Reminders also only
 go out *after* a deadline has passed — nothing warns you it is approaching.
 
-**Downloads are spreadsheets, not PDFs.** Everything exports as CSV, which opens
-in Excel and Google Sheets. The one exception is the payment receipt, which is a
-printable page — use your browser's **Print → Save as PDF**. There is no
-server-generated PDF yet.
+**Some downloads are spreadsheets rather than documents.** Your statement, the
+monthly report and payment receipts come as proper PDFs you can print or send
+on. The arrears list, payments, expenses, governance and audit exports come as
+CSV, which opens in Excel and Google Sheets — those are working files for
+sorting and filtering rather than documents to hand over.
 
 **Password reset does not work for seeded accounts.** Most seeded email
 addresses are placeholders that cannot receive mail. Ask the Administrator.

@@ -39,7 +39,18 @@ export default function AuditLogIndex({
                         />
 
                         <Button asChild variant="outline">
-                            <a href={exportAuditLog().url}>Export</a>
+                            <a
+                                href={
+                                    exportAuditLog({ query: { format: 'pdf' } })
+                                        .url
+                                }
+                            >
+                                PDF (last 500)
+                            </a>
+                        </Button>
+
+                        <Button asChild variant="outline">
+                            <a href={exportAuditLog().url}>CSV (all)</a>
                         </Button>
                     </div>
 

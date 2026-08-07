@@ -367,7 +367,18 @@ export default function PaymentIndex({
 
                     <div className="flex items-center gap-2">
                         <Button asChild variant="outline">
-                            <a href={exportPayments().url}>Export verified</a>
+                            <a
+                                href={
+                                    exportPayments({ query: { format: 'pdf' } })
+                                        .url
+                                }
+                            >
+                                Verified (PDF)
+                            </a>
+                        </Button>
+
+                        <Button asChild variant="outline">
+                            <a href={exportPayments().url}>CSV</a>
                         </Button>
 
                         <RecordPaymentDialog

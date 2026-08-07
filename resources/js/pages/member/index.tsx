@@ -184,7 +184,18 @@ export default function MemberIndex({
 
                     <div className="flex items-center gap-2">
                         <Button asChild variant="outline">
-                            <a href={exportArrears().url}>Arrears ageing</a>
+                            <a
+                                href={
+                                    exportArrears({ query: { format: 'pdf' } })
+                                        .url
+                                }
+                            >
+                                Arrears (PDF)
+                            </a>
+                        </Button>
+
+                        <Button asChild variant="outline">
+                            <a href={exportArrears().url}>CSV</a>
                         </Button>
 
                         {canCreate && <AddMemberDialog />}

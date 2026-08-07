@@ -21,7 +21,10 @@ import {
     index as memberIndex,
     show as showMember,
 } from '@/routes/member';
-import { memberStatement } from '@/routes/export';
+import {
+    memberStatement,
+    memberStatementPdf,
+} from '@/routes/export';
 import type {
     AuditLog,
     BreadcrumbItem,
@@ -116,9 +119,13 @@ export default function MemberShow({
                         {/* A plain anchor, not Inertia's Link: this returns a
                             file download rather than a page. */}
                         <Button asChild variant="outline">
-                            <a href={memberStatement(member.id).url}>
-                                Download statement
+                            <a href={memberStatementPdf(member.id).url}>
+                                Statement (PDF)
                             </a>
+                        </Button>
+
+                        <Button asChild variant="outline">
+                            <a href={memberStatement(member.id).url}>CSV</a>
                         </Button>
 
                         {canUpdate && (

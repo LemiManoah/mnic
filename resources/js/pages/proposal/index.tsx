@@ -172,7 +172,19 @@ export default function ProposalIndex({
 
                     <div className="flex items-center gap-2">
                         <Button asChild variant="outline">
-                            <a href={exportGovernance().url}>Export</a>
+                            <a
+                                href={
+                                    exportGovernance({
+                                        query: { format: 'pdf' },
+                                    }).url
+                                }
+                            >
+                                PDF
+                            </a>
+                        </Button>
+
+                        <Button asChild variant="outline">
+                            <a href={exportGovernance().url}>CSV</a>
                         </Button>
 
                         {canCreate && (

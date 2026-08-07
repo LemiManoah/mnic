@@ -181,6 +181,10 @@ Route::middleware('auth')->group(function (): void {
     // library; the receipt is a printable page the browser saves as PDF.
     Route::get('exports/members/{member}/statement', [ExportController::class, 'memberStatement'])
         ->name('export.member-statement');
+    Route::get('exports/members/{member}/statement.pdf', [ExportController::class, 'memberStatementPdf'])
+        ->name('export.member-statement-pdf');
+    Route::get('exports/reports/{contributionPeriod}.pdf', [ExportController::class, 'monthlyReportPdf'])
+        ->name('export.monthly-report-pdf');
     Route::get('exports/arrears', [ExportController::class, 'arrears'])->name('export.arrears');
     Route::get('exports/contributions/{contributionPeriod}', [ExportController::class, 'contributions'])
         ->name('export.contributions');

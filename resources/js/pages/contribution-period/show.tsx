@@ -186,11 +186,23 @@ export default function ContributionPeriodShow({
                         description={`Due ${period.due_date.slice(0, 10)} · grace ends ${period.grace_ends_on.slice(0, 10)} · ${formatUgx(period.amount)} per member`}
                     />
 
-                    <Button asChild variant="outline">
-                        <a href={exportContributions(period.id).url}>
-                            Export this month
-                        </a>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="outline">
+                            <a
+                                href={
+                                    exportContributions(period.id, {
+                                        query: { format: 'pdf' },
+                                    }).url
+                                }
+                            >
+                                This month (PDF)
+                            </a>
+                        </Button>
+
+                        <Button asChild variant="outline">
+                            <a href={exportContributions(period.id).url}>CSV</a>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">

@@ -63,6 +63,100 @@ it('lets the secretary download any member statement', function (): void {
         ->assertOk();
 });
 
+it('renders the member statement as a PDF', function (): void {
+    $actor = memberWithRole(ClubRole::Member);
+    $period = ContributionPeriod::factory()->create();
+
+    MemberObligation::factory()->create([
+        'member_id' => $actor->id,
+        'contribution_period_id' => $period->id,
+    ]);
+
+    $response = $this->actingAs($actor->user)
+        ->get(route('export.member-statement-pdf', $actor));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
+});
+
+it('stops a member downloading somebody else statement as a PDF', function (): void {
+    $actor = memberWithRole(ClubRole::Member);
+
+    // The PDF route carries the same rule as the CSV one; a second format must
+    // not become a second way around the permission.
+    $this->actingAs($actor->user)
+        ->get(route('export.member-statement-pdf', Member::factory()->create()))
+        ->assertForbidden();
+});
+
+it('renders the monthly report as a PDF', function (): void {
+    $actor = memberWithRole(ClubRole::Member);
+    $period = ContributionPeriod::factory()->create();
+
+    $response = $this->actingAs($actor->user)
+        ->get(route('export.monthly-report-pdf', $period));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
+});
+
+it('serves every tabular export as a PDF when asked', function (): void {
+    $actor = memberWithRole(ClubRole::Secretary);
+    $period = ContributionPeriod::factory()->create();
+
+    MemberObligation::factory()->create(['contribution_period_id' => $period->id]);
+    Payment::factory()->create(['status' => PaymentStatus::Verified]);
+    Expense::factory()->create();
+    Proposal::factory()->create();
+    AuditLog::factory()->create();
+
+    $routes = [
+        route('export.arrears', ['format' => 'pdf']),
+        route('export.contributions', [$period, 'format' => 'pdf']),
+        route('export.payments', ['format' => 'pdf']),
+        route('export.expenses', ['format' => 'pdf']),
+        route('export.governance', ['format' => 'pdf']),
+        route('export.audit-log', ['format' => 'pdf']),
+    ];
+
+    foreach ($routes as $url) {
+        $response = $this->actingAs($actor->user)->get($url);
+
+        $response->assertOk()->assertHeader('content-type', 'application/pdf');
+
+        expect($response->getContent())->toStartWith('%PDF', sprintf('Expected a PDF from %s', $url));
+    }
+});
+
+it('still serves CSV when no format is asked for', function (): void {
+    $actor = memberWithRole(ClubRole::Secretary);
+
+    // PDF is the nicer document, but CSV is what somebody filters and sorts,
+    // so adding one must not remove the other.
+    $this->actingAs($actor->user)
+        ->get(route('export.arrears'))
+        ->assertOk()
+        ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+});
+
+it('caps the audit log PDF but not the CSV', function (): void {
+    $actor = memberWithRole(ClubRole::Secretary);
+
+    $this->actingAs($actor->user)
+        ->get(route('export.audit-log', ['format' => 'pdf']))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+
+    $this->actingAs($actor->user)
+        ->get(route('export.audit-log'))
+        ->assertOk()
+        ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+});
+
 it('exports arrears with the days overdue', function (): void {
     $actor = memberWithRole(ClubRole::Treasurer);
 

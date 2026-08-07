@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
@@ -13,10 +14,12 @@ import {
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { formatUgx } from '@/lib/money';
+import { monthlyReportPdf } from '@/routes/export';
 import { index as reportIndex } from '@/routes/monthly-report';
 import type { BreadcrumbItem, ContributionPeriodStatus } from '@/types';
 
 type ReportPeriod = {
+    id: string;
     label: string;
     due_date: string;
     status: ContributionPeriodStatus;
@@ -114,13 +117,21 @@ export default function MonthlyReportShow({
                         title={`Monthly report ${period.label}`}
                         description={`Contributions due ${period.due_date}`}
                     />
-                    {reconciliation?.is_confirmed ? (
-                        <Badge>Reconciliation confirmed</Badge>
-                    ) : (
-                        <Badge variant="destructive">
-                            Not reconciled — figures unconfirmed
-                        </Badge>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {reconciliation?.is_confirmed ? (
+                            <Badge>Reconciliation confirmed</Badge>
+                        ) : (
+                            <Badge variant="destructive">
+                                Not reconciled — figures unconfirmed
+                            </Badge>
+                        )}
+
+                        <Button asChild variant="outline">
+                            <a href={monthlyReportPdf(period.id).url}>
+                                Download PDF
+                            </a>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -297,12 +297,24 @@ priority order), contribution collection per month, verified payments, expenses,
 governance, audit log. Streamed rather than built in memory, with a UTF-8 BOM so
 Excel does not mangle names.
 
-**CSV, not PDF, and that was a constraint as much as a choice.** No PDF library
-is installed and adding a dependency needs approval, so the payment receipt is a
-print-styled Blade page the browser saves as PDF instead. It works, it needs no
-package, and the view is already the template if server-generated PDFs are
-wanted later. If the club wants proper PDFs, that is a `composer require` and a
-conversation.
+**PDFs** were added on 7 August with `barryvdh/laravel-dompdf`: the payment
+receipt (rendered inline so it opens in the browser's viewer), the member
+statement, and the monthly report. `PdfExport` mirrors `CsvExport` so controllers
+read the same either way, and every PDF view extends `pdf.layout`.
+
+Two things to know before touching those views:
+
+- **dompdf understands roughly CSS 2.1.** No flexbox, no grid, no CSS
+  variables. `pdf.layout` pays that cost once with tables and floats; a layout
+  copied from a React page will not survive. The font is DejaVu Sans because the
+  default drops anything outside Latin-1.
+- **`MonthlyReportData` is shared** by the screen and the PDF. It was extracted
+  precisely so the two cannot drift — a report saying one thing on screen and
+  another on paper is worse than having no PDF.
+
+CSV remains for everything else, including the four exports with no PDF form
+(arrears, payments, expenses, governance, audit log), because those are working
+files people filter and sort rather than documents they hand over.
 
 Two access rules worth keeping: a member may always export **their own**
 statement but needs officer permission for anyone else's, and the payments

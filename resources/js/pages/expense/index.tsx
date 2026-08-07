@@ -393,7 +393,18 @@ export default function ExpenseIndex({
 
                     <div className="flex items-center gap-2">
                         <Button asChild variant="outline">
-                            <a href={exportExpenses().url}>Export</a>
+                            <a
+                                href={
+                                    exportExpenses({ query: { format: 'pdf' } })
+                                        .url
+                                }
+                            >
+                                PDF
+                            </a>
+                        </Button>
+
+                        <Button asChild variant="outline">
+                            <a href={exportExpenses().url}>CSV</a>
                         </Button>
 
                         {canRequest && (

@@ -7,20 +7,20 @@ namespace App\Http\Controllers;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
-use Illuminate\Contracts\View\View;
+use App\Services\PdfExport;
 use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
- * A printable receipt for a verified payment.
+ * A PDF receipt for a verified payment.
  *
- * Rendered as a plain Blade page rather than an Inertia screen, and styled so
- * the browser's own "save as PDF" produces something a member can keep. That
- * avoids adding a PDF library for one document — if the club later wants
- * server-generated PDFs, this view is already the template.
+ * Rendered server-side so the member gets the same document however they opened
+ * it — a browser's "print to PDF" varies by browser, by margin settings and by
+ * whether the user remembers to turn headers off.
  */
 final readonly class PaymentReceiptController
 {
-    public function show(Payment $payment): View
+    public function show(Payment $payment, PdfExport $pdf): Response
     {
         Gate::authorize('viewEvidence', $payment);
 
@@ -39,9 +39,13 @@ final readonly class PaymentReceiptController
                 'amount' => $allocation->amount,
             ]);
 
-        return view('payment-receipt', [
-            'payment' => $payment,
-            'allocations' => $allocations,
-        ]);
+        return $pdf->stream(
+            'pdf.payment-receipt',
+            sprintf('receipt-%s.pdf', $payment->reference),
+            [
+                'payment' => $payment,
+                'allocations' => $allocations,
+            ],
+        );
     }
 }
