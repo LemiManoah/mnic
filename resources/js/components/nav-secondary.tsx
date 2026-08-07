@@ -4,6 +4,7 @@ import * as React from 'react';
 import {
     SidebarGroup,
     SidebarGroupContent,
+    SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -11,6 +12,7 @@ import {
 
 export function NavSecondary({
     items,
+    label = 'Administration',
     ...props
 }: {
     items: {
@@ -18,9 +20,11 @@ export function NavSecondary({
         url: string;
         icon: Icon;
     }[];
+    label?: string;
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
     return (
         <SidebarGroup {...props}>
+            <SidebarGroupLabel>{label}</SidebarGroupLabel>
             <SidebarGroupContent>
                 <SidebarMenu>
                     {items.map((item) => (

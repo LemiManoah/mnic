@@ -17,6 +17,11 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'tenant' => [
+        'name' => env('TENANT_NAME', 'Musuwa Nation'),
+        'logo_url' => env('TENANT_LOGO_URL'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

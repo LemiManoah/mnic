@@ -3,6 +3,7 @@ import { type Icon } from '@tabler/icons-react';
 import {
     SidebarGroup,
     SidebarGroupContent,
+    SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -11,17 +12,20 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 
 export function NavMain({
     items,
+    label = 'Operations',
 }: {
     items: {
         title: string;
         url: string;
         icon?: Icon;
     }[];
+    label?: string;
 }) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
 
     return (
         <SidebarGroup>
+            <SidebarGroupLabel>{label}</SidebarGroupLabel>
             <SidebarGroupContent className="flex flex-col gap-2">
                 <SidebarMenu>
                     {items.map((item) => (

@@ -78,6 +78,34 @@ it('keeps the requested login for the treasurer', function (): void {
         ->and($user?->hasRole(ClubRole::Administrator->value))->toBeTrue();
 });
 
+it('uses gmail logins and the shared demo password for seeded members', function (): void {
+    $users = User::query()->orderBy('name')->get();
+
+    expect($users)->toHaveCount(20);
+
+    foreach ($users as $user) {
+        expect(str_ends_with((string) $user->email, '@gmail.com'))->toBeTrue()
+            ->and(Hash::check('password', (string) $user->password))->toBeTrue();
+    }
+
+    expect(User::query()->where('name', 'Fredrick Ssekweyama')->first()?->email)->toBe('ssekweyama@gmail.com')
+        ->and(User::query()->where('name', 'John Esau Tumwine')->first()?->email)->toBe('tumwine@gmail.com');
+});
+
+it('updates old placeholder login emails when the demo seeder is rerun', function (): void {
+    User::query()
+        ->where('name', 'Fredrick Ssekweyama')
+        ->firstOrFail()
+        ->forceFill(['email' => 'fredrick.ssekweyama.01@musuwanation.test'])
+        ->save();
+
+    (new MusuwaNationSeeder)->run();
+
+    expect(User::query()->where('name', 'Fredrick Ssekweyama')->first()?->email)->toBe('ssekweyama@gmail.com')
+        ->and(User::query()->where('email', 'fredrick.ssekweyama.01@musuwanation.test')->exists())->toBeFalse()
+        ->and(User::query()->count())->toBe(20);
+});
+
 it('separates recording from verifying so maker-checker works out of the box', function (): void {
     $treasurer = Member::query()->where('position', ClubPosition::AssistantTreasurer->value)->first();
     $whip = Member::query()->where('position', ClubPosition::ChiefWhip->value)->first();

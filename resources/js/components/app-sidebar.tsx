@@ -8,7 +8,6 @@ import {
     IconFileDescription,
     IconGavel,
     IconHistory,
-    IconInnerShadowTop,
     IconKey,
     IconReceipt,
     IconReportMoney,
@@ -51,7 +50,8 @@ import { index as systemRoleIndex } from '@/routes/system-role';
 import { index as userManagementIndex } from '@/routes/user-management';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { auth } = usePage().props;
+    const { auth, tenant } = usePage().props;
+    const tenantLogoUrl = tenant.logo_url || '/musuwa_nation.jpeg';
 
     const isAdministrator = auth.roles.includes('administrator');
     const isSecretary = auth.roles.includes('secretary');
@@ -142,12 +142,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             asChild
-                            className="data-[slot=sidebar-menu-button]:p-1.5!"
+                            className="h-auto data-[slot=sidebar-menu-button]:p-1.5!"
                         >
                             <Link href={dashboard()} prefetch>
-                                <IconInnerShadowTop className="size-5!" />
-                                <span className="text-base font-semibold">
-                                    Musuwa Nation
+                                <img
+                                    src={tenantLogoUrl}
+                                    alt={`${tenant.name} logo`}
+                                    className="size-9 shrink-0 rounded-md object-cover"
+                                />
+                                <span className="grid min-w-0 flex-1 text-left leading-tight">
+                                    <span className="truncate text-base font-semibold">
+                                        {tenant.name}
+                                    </span>
+                                    <span className="truncate text-xs text-sidebar-foreground/55">
+                                        Product of Musuwa Nation
+                                    </span>
                                 </span>
                             </Link>
                         </SidebarMenuButton>
@@ -156,10 +165,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={navMain} />
+                <NavMain items={navMain} label="Club work" />
                 <NavDocuments items={documents} />
                 {navSecondary.length > 0 && (
-                    <NavSecondary items={navSecondary} className="mt-auto" />
+                    <NavSecondary
+                        items={navSecondary}
+                        label="Administration"
+                        className="mt-auto"
+                    />
                 )}
             </SidebarContent>
 

@@ -8,6 +8,7 @@ import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
+import StatusNote from '@/components/status-note';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -445,7 +446,7 @@ export default function ExpenseIndex({
                                     <TableCell className="text-muted-foreground">
                                         {expense.requested_by ?? '—'}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="max-w-72 whitespace-normal align-top">
                                         <Badge
                                             variant={
                                                 STATUS_VARIANT[expense.status]
@@ -454,9 +455,9 @@ export default function ExpenseIndex({
                                             {expense.status}
                                         </Badge>
                                         {expense.rejection_reason && (
-                                            <span className="block text-xs text-muted-foreground">
+                                            <StatusNote>
                                                 {expense.rejection_reason}
-                                            </span>
+                                            </StatusNote>
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">

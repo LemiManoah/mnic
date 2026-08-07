@@ -8,6 +8,10 @@ declare module '@inertiajs/core' {
         };
         sharedPageProps: {
             name: string;
+            tenant: {
+                name: string;
+                logo_url: string | null;
+            };
             auth: Auth;
             sidebarOpen: boolean;
             [key: string]: unknown;

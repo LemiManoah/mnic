@@ -62,7 +62,7 @@ use Illuminate\Support\Facades\DB;
  * and monthly reports something real to show.
  *
  * Contact details are deliberate placeholders — sequential phone numbers and
- * addresses on the reserved `.test` domain, which can never receive mail.
+ * Gmail-style login addresses generated from the member's surname.
  * Replace them with real details before the pilot; see mnic.md §3.1.
  */
 final class MusuwaNationSeeder extends Seeder
@@ -124,17 +124,23 @@ final class MusuwaNationSeeder extends Seeder
     {
         foreach (self::MEMBERS as $index => $definition) {
             $sequence = $index + 1;
+            $email = $definition['email'] ?? $this->emailFor($definition['name']);
 
-            $user = User::query()->firstOrCreate(
-                ['email' => $definition['email'] ?? $this->emailFor($definition['name'], $sequence)],
+            $user = User::query()->firstWhere('email', $email)
+                ?? User::query()->firstWhere('name', $definition['name'])
+                ?? new User;
+
+            $user->forceFill(
                 [
+                    'email' => $email,
                     'name' => $definition['name'],
                     'password' => self::PASSWORD,
                     'email_verified_at' => now(),
                 ],
             );
+            $user->save();
 
-            $member = Member::query()->firstOrCreate(
+            $member = Member::query()->updateOrCreate(
                 ['member_number' => sprintf('MN-%04d', $sequence)],
                 [
                     'user_id' => $user->id,
@@ -715,12 +721,12 @@ final class MusuwaNationSeeder extends Seeder
     }
 
     /**
-     * A stable, obviously-fake address on the reserved `.test` TLD.
+     * A simple login address based on the final word in the member's name.
      */
-    private function emailFor(string $fullName, int $sequence): string
+    private function emailFor(string $fullName): string
     {
-        $slug = str($fullName)->lower()->replaceMatches('/[^a-z]+/', '.')->trim('.')->value();
+        $surname = str($fullName)->lower()->replaceMatches('/[^a-z]+/', ' ')->trim()->explode(' ')->last();
 
-        return sprintf('%s.%02d@musuwanation.test', $slug, $sequence);
+        return sprintf('%s@gmail.com', $surname);
     }
 }

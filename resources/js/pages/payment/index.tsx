@@ -8,6 +8,7 @@ import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
+import StatusNote from '@/components/status-note';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -442,7 +443,7 @@ export default function PaymentIndex({
                                             ))
                                         )}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="max-w-72 whitespace-normal align-top">
                                         <Badge
                                             variant={
                                                 STATUS_VARIANT[payment.status]
@@ -451,16 +452,16 @@ export default function PaymentIndex({
                                             {payment.status}
                                         </Badge>
                                         {payment.rejection_reason && (
-                                            <span className="block text-xs text-muted-foreground">
+                                            <StatusNote>
                                                 {payment.rejection_reason}
-                                            </span>
+                                            </StatusNote>
                                         )}
                                         {payment.reversal_reason && (
-                                            <span className="block text-xs text-muted-foreground">
+                                            <StatusNote>
                                                 {payment.reversal_requested_by
                                                     ? `${payment.reversal_requested_by}: ${payment.reversal_reason}`
                                                     : payment.reversal_reason}
-                                            </span>
+                                            </StatusNote>
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
