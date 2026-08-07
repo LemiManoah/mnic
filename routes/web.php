@@ -12,8 +12,10 @@ use App\Http\Controllers\ExpensePaymentController;
 use App\Http\Controllers\ExpenseVerificationController;
 use App\Http\Controllers\ExternalAccountController;
 use App\Http\Controllers\MeetingAttendanceController;
+use App\Http\Controllers\MeetingCancellationController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MeetingMinutesController;
+use App\Http\Controllers\MeetingMinutesCorrectionController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberObligationAdjustmentController;
 use App\Http\Controllers\MemberRoleController;
@@ -31,6 +33,7 @@ use App\Http\Controllers\PositionPollVoteController;
 use App\Http\Controllers\PositionPollVotingController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ProposalVotingController;
+use App\Http\Controllers\ProposalWithdrawalController;
 use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\ReconciliationItemController;
 use App\Http\Controllers\ReconciliationRejectionController;
@@ -103,6 +106,12 @@ Route::middleware('auth')->group(function (): void {
     Route::put('meetings/{meeting}/attendance', [MeetingAttendanceController::class, 'update'])->name('meeting-attendance.update');
     Route::post('meetings/{meeting}/minutes', [MeetingMinutesController::class, 'store'])->name('meeting-minutes.store');
     Route::put('meetings/{meeting}/minutes', [MeetingMinutesController::class, 'update'])->name('meeting-minutes.update');
+    // A correction supersedes confirmed minutes with a new version rather than
+    // editing them, so it posts a new record instead of updating the old one.
+    Route::post('meetings/{meeting}/minutes/correction', [MeetingMinutesCorrectionController::class, 'store'])
+        ->name('meeting-minutes-correction.store');
+    Route::put('meetings/{meeting}/cancellation', [MeetingCancellationController::class, 'update'])
+        ->name('meeting-cancellation.update');
 
     // Proposals and voting...
     Route::get('proposals', [ProposalController::class, 'index'])->name('proposal.index');
@@ -111,6 +120,8 @@ Route::middleware('auth')->group(function (): void {
     Route::post('proposals/{proposal}/voting', [ProposalVotingController::class, 'store'])->name('proposal-voting.store');
     Route::put('proposals/{proposal}/voting', [ProposalVotingController::class, 'update'])->name('proposal-voting.update');
     Route::post('proposals/{proposal}/votes', [VoteController::class, 'store'])->name('vote.store');
+    Route::put('proposals/{proposal}/withdrawal', [ProposalWithdrawalController::class, 'update'])
+        ->name('proposal-withdrawal.update');
 
     // Action items...
     Route::get('action-items', [ActionItemController::class, 'index'])->name('action-item.index');

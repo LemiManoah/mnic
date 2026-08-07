@@ -10,13 +10,16 @@ use App\Models\Member;
 use App\Models\MemberObligation;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Notifications\PaymentVerified;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class VerifyPayment
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -28,7 +31,7 @@ final readonly class VerifyPayment
 
         throw_if($payment->status !== PaymentStatus::Submitted, InvalidArgumentException::class, 'Only a submitted payment can be verified.');
 
-        return DB::transaction(function () use ($payment, $verifier, $ipAddress): Payment {
+        DB::transaction(function () use ($payment, $verifier, $ipAddress): Payment {
             $before = $payment->toArray();
             $remaining = $payment->amount;
 
@@ -92,5 +95,16 @@ final readonly class VerifyPayment
 
             return $payment;
         });
+
+        // Told after the transaction commits, never inside it — a rollback must
+        // not leave a member holding an email about a payment that was not
+        // actually verified.
+        $payment->loadMissing('member.user');
+
+        if ($payment->member !== null) {
+            $this->notifyMembers->handle([$payment->member], new PaymentVerified($payment));
+        }
+
+        return $payment;
     }
 }

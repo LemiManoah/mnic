@@ -7,13 +7,16 @@ namespace App\Actions;
 use App\Enums\PaymentStatus;
 use App\Models\Member;
 use App\Models\Payment;
+use App\Notifications\PaymentRejected;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class RejectPayment
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -23,7 +26,7 @@ final readonly class RejectPayment
 
         throw_if($payment->status !== PaymentStatus::Submitted, InvalidArgumentException::class, 'Only a submitted payment can be rejected.');
 
-        return DB::transaction(function () use ($payment, $verifier, $reason, $ipAddress): Payment {
+        DB::transaction(function () use ($payment, $verifier, $reason, $ipAddress): Payment {
             $before = $payment->toArray();
 
             $payment->update([
@@ -44,5 +47,15 @@ final readonly class RejectPayment
 
             return $payment;
         });
+
+        // A rejection is the one notification a member most needs: their money
+        // is not counted and only they can fix it.
+        $payment->loadMissing('member.user');
+
+        if ($payment->member !== null) {
+            $this->notifyMembers->handle([$payment->member], new PaymentRejected($payment));
+        }
+
+        return $payment;
     }
 }

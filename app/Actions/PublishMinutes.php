@@ -7,13 +7,16 @@ namespace App\Actions;
 use App\Models\Meeting;
 use App\Models\Member;
 use App\Models\Minute;
+use App\Notifications\MinutesPublished;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class PublishMinutes
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -23,7 +26,7 @@ final readonly class PublishMinutes
 
         throw_if($latest instanceof Minute && $latest->isConfirmed(), InvalidArgumentException::class, 'Confirmed minutes cannot be replaced; record a correction instead.');
 
-        return DB::transaction(function () use ($meeting, $body, $latest, $actor, $ipAddress): Minute {
+        $minute = DB::transaction(function () use ($meeting, $body, $latest, $actor, $ipAddress): Minute {
             // Publishing always adds a version rather than editing in place.
             $minute = Minute::query()->create([
                 'meeting_id' => $meeting->id,
@@ -43,5 +46,9 @@ final readonly class PublishMinutes
 
             return $minute;
         });
+
+        $this->notifyMembers->toActiveMembers(new MinutesPublished($meeting, $minute));
+
+        return $minute;
     }
 }

@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read string|null $published_by_member_id
  * @property-read CarbonInterface|null $confirmed_at
  * @property-read string|null $confirmed_by_member_id
+ * @property-read string|null $correction_reason
+ * @property-read string|null $corrects_minute_id
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
  */
@@ -44,6 +46,8 @@ final class Minute extends Model
             'published_by_member_id' => 'string',
             'confirmed_at' => 'datetime',
             'confirmed_by_member_id' => 'string',
+            'correction_reason' => 'string',
+            'corrects_minute_id' => 'string',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -57,8 +61,21 @@ final class Minute extends Model
         return $this->belongsTo(Meeting::class);
     }
 
+    /**
+     * @return BelongsTo<self, $this>
+     */
+    public function correctsMinute(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'corrects_minute_id');
+    }
+
     public function isConfirmed(): bool
     {
         return $this->confirmed_at !== null;
+    }
+
+    public function isCorrection(): bool
+    {
+        return $this->corrects_minute_id !== null;
     }
 }

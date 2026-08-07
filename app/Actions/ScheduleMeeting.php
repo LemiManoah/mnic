@@ -7,12 +7,15 @@ namespace App\Actions;
 use App\Enums\MeetingStatus;
 use App\Models\Meeting;
 use App\Models\Member;
+use App\Notifications\MeetingScheduled;
 use Illuminate\Support\Facades\DB;
 
 final readonly class ScheduleMeeting
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -21,7 +24,7 @@ final readonly class ScheduleMeeting
      */
     public function handle(array $attributes, ?Member $actor = null, ?string $ipAddress = null): Meeting
     {
-        return DB::transaction(function () use ($attributes, $actor, $ipAddress): Meeting {
+        $meeting = DB::transaction(function () use ($attributes, $actor, $ipAddress): Meeting {
             $meeting = Meeting::query()->create([
                 ...$attributes,
                 'status' => MeetingStatus::Scheduled,
@@ -39,5 +42,9 @@ final readonly class ScheduleMeeting
 
             return $meeting;
         });
+
+        $this->notifyMembers->toActiveMembers(new MeetingScheduled($meeting));
+
+        return $meeting;
     }
 }

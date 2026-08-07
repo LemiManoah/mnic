@@ -72,9 +72,29 @@ final readonly class MeetingController
 
         $latest = $meeting->latestMinute();
 
+        // Same reason as MemberController::show — a standalone `: null` arm of
+        // a multi-line ternary cannot be marked covered.
+        $latestMinute = null;
+
+        if ($latest instanceof Minute) {
+            $latestMinute = [
+                'id' => $latest->id,
+                'version' => $latest->version,
+                'body' => $latest->body,
+                'confirmed_at' => $latest->confirmed_at?->toDateTimeString(),
+                'correction_reason' => $latest->correction_reason,
+            ];
+        }
+
         return Inertia::render('meeting/show', [
             'meeting' => $meeting,
             'canManageMinutes' => $user->can('manageMinutes', $meeting),
+            'canCancel' => $user->can('cancel', $meeting),
+            // Correcting only applies once the current version is confirmed;
+            // before that, republishing is the ordinary path.
+            'canCorrectMinutes' => $latest instanceof Minute
+                && $latest->isConfirmed()
+                && $user->can('correctMinutes', $meeting),
             'activeMembers' => Member::query()
                 ->where('status', MemberStatus::Active->value)
                 ->orderBy('full_name')
@@ -84,15 +104,10 @@ final readonly class MeetingController
                 'member_name' => $record->member->full_name ?? __('Unknown member'),
                 'status' => $record->status,
             ]),
-            'minutes' => $latest instanceof Minute ? [
-                'id' => $latest->id,
-                'version' => $latest->version,
-                'body' => $latest->body,
-                'confirmed_at' => $latest->confirmed_at?->toDateTimeString(),
-            ] : null,
+            'minutes' => $latestMinute,
             'minuteVersions' => $meeting->minutes()
                 ->orderByDesc('version')
-                ->get(['id', 'version', 'confirmed_at']),
+                ->get(['id', 'version', 'confirmed_at', 'correction_reason']),
             'proposals' => $meeting->proposals->map(fn (Proposal $proposal): array => [
                 'id' => $proposal->id,
                 'title' => $proposal->title,

@@ -7,12 +7,15 @@ namespace App\Actions;
 use App\Enums\ActionItemStatus;
 use App\Models\ActionItem;
 use App\Models\Member;
+use App\Notifications\ActionItemAssigned;
 use Illuminate\Support\Facades\DB;
 
 final readonly class CreateActionItem
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -21,7 +24,7 @@ final readonly class CreateActionItem
      */
     public function handle(array $attributes, ?Member $actor = null, ?string $ipAddress = null): ActionItem
     {
-        return DB::transaction(function () use ($attributes, $actor, $ipAddress): ActionItem {
+        $actionItem = DB::transaction(function () use ($attributes, $actor, $ipAddress): ActionItem {
             $actionItem = ActionItem::query()->create([
                 ...$attributes,
                 'status' => ActionItemStatus::Open,
@@ -39,5 +42,18 @@ final readonly class CreateActionItem
 
             return $actionItem;
         });
+
+        // Only the owner is told. An action with nobody on it is a note to the
+        // meeting, not a job for a person.
+        $actionItem->loadMissing('ownerMember.user');
+
+        if ($actionItem->ownerMember !== null) {
+            $this->notifyMembers->handle(
+                [$actionItem->ownerMember],
+                new ActionItemAssigned($actionItem),
+            );
+        }
+
+        return $actionItem;
     }
 }

@@ -1,5 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
 import ProposalVotingController from '@/actions/App/Http/Controllers/ProposalVotingController';
+import ProposalWithdrawalController from '@/actions/App/Http/Controllers/ProposalWithdrawalController';
 import VoteController from '@/actions/App/Http/Controllers/VoteController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -31,12 +32,14 @@ export default function ProposalShow({
     proposal,
     canManageVoting,
     canVote,
+    canWithdraw,
     tally,
     votes,
 }: {
     proposal: Proposal;
     canManageVoting: boolean;
     canVote: boolean;
+    canWithdraw: boolean;
     tally: VoteTally;
     votes: VoteRow[];
 }) {
@@ -73,8 +76,66 @@ export default function ProposalShow({
                         <div className="whitespace-pre-wrap">
                             {proposal.description}
                         </div>
+
+                        {proposal.withdrawal_reason && (
+                            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                                <span className="font-medium">Withdrawn.</span>{' '}
+                                {proposal.withdrawal_reason}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
+
+                {canWithdraw && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Withdraw this proposal</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="mb-3 text-sm text-muted-foreground">
+                                Takes the proposal off the table before it
+                                reaches a result. Any votes already cast stay in
+                                the record — the club should be able to see that
+                                people had committed a position before it was
+                                pulled.
+                            </p>
+
+                            <Form
+                                {...ProposalWithdrawalController.update.form(
+                                    proposal.id,
+                                )}
+                                options={{ preserveScroll: true }}
+                                className="flex flex-wrap items-end gap-2"
+                            >
+                                {({ processing, errors }) => (
+                                    <>
+                                        <div className="grid flex-1 gap-1">
+                                            <Label htmlFor="withdrawal-reason">
+                                                Reason
+                                            </Label>
+                                            <Input
+                                                id="withdrawal-reason"
+                                                name="reason"
+                                                required
+                                                placeholder="Why is it being withdrawn?"
+                                            />
+                                            <InputError
+                                                message={errors.reason}
+                                            />
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            variant="destructive"
+                                            disabled={processing}
+                                        >
+                                            Withdraw
+                                        </Button>
+                                    </>
+                                )}
+                            </Form>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {proposal.status === 'draft' && canManageVoting && (
                     <Card>

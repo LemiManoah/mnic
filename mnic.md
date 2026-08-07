@@ -99,27 +99,36 @@ bypass can switch them off. Keep it that way.
 Likewise voting eligibility: the electorate is frozen when voting opens, so no
 role and no bypass can add a voter to an open ballot.
 
-## 5. The coverage gate fails
+## 5. The coverage gate — status unknown
 
-`pest --coverage --exactly=100.0` will not pass. Missing feature tests for:
+**The list of "missing controller tests" that stood here until 7 August was
+wrong.** It named eleven controllers as untested; all eleven have had feature
+tests for some time. It was written when they were genuinely missing and never
+re-checked. Every controller in `app/Http/Controllers` now has a matching
+`tests/Feature/Controllers/*Test.php`.
 
-- `ExpenseApprovalController`, `ExpensePaymentController`,
-  `ExpenseVerificationController`
-- `ReconciliationController`, `ReconciliationReviewController`,
-  `ReconciliationItemController`, `ReconciliationRejectionController`
-- `ExternalAccountController`, `DashboardController`, `MonthlyReportController`
+So the gate may still fail, but **nobody has measured why**. Do that before
+writing a line of test code:
 
-The Actions behind all of these *are* covered (`ExpenseWorkflowTest`,
-`ReconciliationWorkflowTest`) — it is the HTTP layer and its permission
-boundaries that have no tests.
+```bash
+XDEBUG_MODE=coverage vendor/bin/pest --parallel --coverage --exactly=100.0 --exclude-testsuite Browser
+```
+
+Coverage is per line, not per file, and feature tests exercise the Actions
+behind them — so "this Action has no dedicated unit test" does not mean it is
+uncovered. Only the report knows.
 
 Watch for the two traps this repo sets: an unreachable branch fails the gate
 (prefer `firstOrFail()` over a null-check-and-throw the policy already
 guarantees), and a `->map()` closure over a collection no test populates counts
 as uncovered.
 
-While in here, make `MusuwaNationSeederTest` seed once per file rather than once
-per test. Eight minutes of a 22-minute suite is one `beforeEach`.
+Separately, `MusuwaNationSeederTest` re-runs the whole seeder in `beforeEach`,
+so it seeds eighteen times and takes about eight minutes of the suite. The fix
+is a trade-off rather than a free win — `RefreshDatabase` rebuilds the schema
+per test, so seeding once means either consolidating the eighteen tests into
+fewer, larger ones (cheaper, worse diagnostics) or building a snapshot
+mechanism. Decide with the coverage numbers in hand.
 
 ## 6. Seeded data is placeholder
 
@@ -158,61 +167,83 @@ XDEBUG_MODE=coverage vendor/bin/pest --parallel --coverage --exactly=100.0 --exc
 
 **Exit:** `composer test` passes end to end, Browser suite excepted.
 
-## M2 — Close the functional dead ends
+## M2 — Close the functional dead ends ✅ mostly done
 
-**Why second:** these are places where the application can reach a state it
-cannot leave. That is worse than a missing feature, because it strands real
-data.
+Three of the four items listed here on 7 August turned out to be **already
+built** — the same stale-doc problem as §5. Corrected record:
 
-- **Reconciliation differences.** The action, request, controller and routes all
-  exist; the *form* does not. A reconciliation with a difference therefore
-  cannot be confirmed through the UI, so a month that does not balance cannot be
-  closed. This is the most serious of the three.
-- **Withdraw a proposal, cancel a meeting, cancel an action item.**
-  `ProposalStatus::Withdrawn`, `MeetingStatus::Cancelled` and
-  `ActionItemStatus::Cancelled` all exist with no route to reach them.
-- **Minutes corrections.** Confirmed minutes are immutable and there is no
-  corrective mechanism. This is a governance decision before it is a code one:
-  decide whether a correction is a new version, an appended amendment, or a
-  motion at the next meeting.
+- **Reconciliation differences** — already built. `AddItemDialog` and the
+  per-item Resolve button are in `resources/js/pages/reconciliation/index.tsx`.
+  The claim that the form did not exist dated from before it was written.
+- **Cancel an action item** — already reachable. `ActionItemController` passes
+  every `ActionItemStatus` case as `statusOptions` and the UI renders them all,
+  so `Cancelled` has always been selectable.
+- **Withdraw a proposal** — built 7 August. `WithdrawProposal`,
+  `ProposalWithdrawalController`, `ProposalPolicy::withdraw`, a reason field and
+  an audit entry. Votes already cast are deliberately kept: a withdrawn
+  proposal that people had already voted on is part of the record.
+- **Cancel a meeting** — built 7 August. `CancelMeeting`,
+  `MeetingCancellationController`, `MeetingPolicy::cancel`. Only a *scheduled*
+  meeting can be cancelled; one already held has attendance and minutes hanging
+  off it. `MeetingPolicy` now carries `EnforcesBusinessRules` so the
+  administrator bypass cannot make the button appear on a meeting that happened.
+- **Minutes corrections** — built 7 August. The club chose a **superseding
+  version**: `CorrectMinutes` writes version N+1 carrying `correction_reason`
+  and `corrects_minute_id`, leaves the confirmed version untouched, and the
+  correction must itself be confirmed before it is official.
+
+Still outstanding:
+
 - **Controlled adjustment after a month is locked.** A locked month is correctly
   immutable, but the proposal's "controlled adjustment" path does not exist.
 
 **Exit:** every state in every status enum is reachable, or documented as
 deliberately unreachable.
 
-## M3 — Set the clock and the mail correctly
+## M3 — Set the clock and the mail correctly ✅ code done
 
-**Why third:** M4 cannot be built on either of these, and both are quick.
+- **Timezone** — `config/app.php` now reads `env('APP_TIMEZONE', 'Africa/Kampala')`.
+  Every due date, grace date and overdue comparison was three hours out on UTC;
+  nothing had surfaced it because nothing acted on `grace_ends_on` until M4.
+- **Channel: email**, chosen 7 August. Notifications go to `mail` *and*
+  `database`, so there is an in-app record when an email is missed, filtered, or
+  sent to one of the placeholder `.test` addresses.
 
-- **`config/app.php` sets `timezone => 'UTC'`.** Every due date, grace date and
-  "is this overdue" comparison in a Kampala club is therefore three hours out.
-  Nobody has noticed because nothing acts on `grace_ends_on` yet — M4 is exactly
-  what will expose it. Decide `Africa/Kampala` and check the existing date
-  assertions still hold.
-- **`MAIL_MAILER=log`.** Nothing can actually be delivered. Also decide the
-  channel: for a Ugandan club SMS or WhatsApp likely matters more than email,
-  and that changes what M4 builds.
+**Still outstanding:** `MAIL_MAILER=log` in `.env`, so nothing is actually
+delivered yet. Point it at a real transport and prove a message arrives. That is
+deployment configuration, not code.
 
 **Exit:** a test message reaches a real member on a real device.
 
-## M4 — Automation and notifications
+## M4 — Automation and notifications ✅ mostly done
 
-**Why fourth:** it depends on M2, because a notification that fires on a state
-nobody can correct is worse than none; and on M3, because it needs a working
-clock and a working channel.
+**Overdue is derived, not stored.** `MemberObligation::isOverdue()` and the
+`overdue()` scope compare the period's `grace_ends_on` against today. A stored
+status would need one sweep to set it and another to clear it when somebody
+pays, and would be wrong in between; deriving means the answer is always current
+and changing the grace day needs no migration.
 
-- **Overdue sweep.** `grace_ends_on` is stored but nothing acts on it. Needs a
-  scheduled command, and a decision: add `ObligationStatus::Overdue`, or derive
-  overdue from the grace date at read time.
-- **Notifications** — nothing notifies anyone of anything today. There is no
-  `app/Notifications`, no `app/Jobs`, no scheduled command, and no
-  `notifications` table. Cover: period opened, deadline approaching, obligation
-  overdue, payment verified/rejected, expense approved/rejected, meeting
-  scheduled, minutes published, vote or poll opened and closing, action
-  assigned/overdue, monthly report published.
-- Nothing currently dispatches to the queue, though the worker runs under
-  `composer dev`.
+**Built:** `notifications` table · `NotifyMembers` (skips members with no login,
+de-duplicates recipients) · `ClubNotification` trait giving every notification
+the same mail + database shape · nine notifications — payment verified,
+payment rejected, obligation overdue, contribution period opened, meeting
+scheduled, proposal voting opened, proposal voting closing, action item
+assigned, action item overdue, minutes published/corrected.
+
+**`club:sweep-overdue`** runs daily at 09:00 Kampala time: overdue
+contributions, overdue actions, and votes closing within a day. The vote
+reminder goes only to members on the frozen electorate who have **not** voted —
+reminding somebody who already voted is how people learn to ignore the emails.
+
+Notifications fire **after** the transaction commits, never inside it, so a
+rollback cannot leave a member holding an email about something that did not
+happen.
+
+Still outstanding:
+
+- Expense approved/rejected and monthly report published have no notification.
+- Position polls notify nobody — only proposals do.
+- Nothing yet warns that a deadline is *approaching*, only that it has passed.
 
 **Exit:** a member learns they are in arrears without anyone telling them.
 
@@ -293,6 +324,12 @@ application, so it is not worth starting on the strength of one club.
   this starter kit's `post-update-cmd`, which runs `npm-check-updates -u` and
   rewrites every frontend dependency. Revert that hunk after adding any PHP
   package.
+- **`wayfinder:generate` needs `--with-form`.** `vite.config.ts` sets
+  `formVariants: true`, but the Artisan command defaults to off. Running it bare
+  regenerates every file under `resources/js/actions` and `resources/js/routes`
+  without `.form()`, producing ~60 typecheck errors in pages nobody touched. If
+  a lint run suddenly reports `Property 'form' does not exist` across unrelated
+  files, that is the cause — rerun with the flag, do not edit the pages.
 - **shadcn blocks overwrite files.** `sidebar-03` and `dashboard-01` each
   replaced `app-sidebar.tsx` (and `dashboard-01` also `dashboard.tsx`) with
   their sample data. Their nav components ship plain `<a href>` tags that break

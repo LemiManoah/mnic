@@ -30,6 +30,7 @@ test('meeting to array', function (): void {
             'scheduled_by_member_id',
             'created_at',
             'updated_at',
+            'cancellation_reason',
         ]);
 });
 

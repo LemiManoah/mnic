@@ -36,6 +36,20 @@ final class ProposalPolicy implements EnforcesBusinessRules
     }
 
     /**
+     * A proposal can only be pulled before it reaches a result. Once it has
+     * passed or been rejected the membership has spoken, and the way to undo
+     * that is another proposal, not a withdrawal.
+     *
+     * The status half is a state question, so the administrator bypass does
+     * not apply — this policy carries EnforcesBusinessRules.
+     */
+    public function withdraw(User $user, Proposal $proposal): bool
+    {
+        return in_array($proposal->status, [ProposalStatus::Draft, ProposalStatus::Open], true)
+            && $user->can(Permission::ProposalsManageVoting->value);
+    }
+
+    /**
      * One member, one vote — and only members captured in the eligibility
      * snapshot taken when voting opened.
      *

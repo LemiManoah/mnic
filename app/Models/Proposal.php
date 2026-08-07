@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int $quorum_required
  * @property-read int $approval_percent
  * @property-read string|null $outcome_note
+ * @property-read string|null $withdrawal_reason
  * @property-read string|null $created_by_member_id
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
@@ -56,6 +57,7 @@ final class Proposal extends Model
             'quorum_required' => 'integer',
             'approval_percent' => 'integer',
             'outcome_note' => 'string',
+            'withdrawal_reason' => 'string',
             'created_by_member_id' => 'string',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

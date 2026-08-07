@@ -7,6 +7,8 @@ namespace App\Models;
 use App\Enums\ObligationStatus;
 use Carbon\CarbonInterface;
 use Database\Factories\MemberObligationFactory;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -75,6 +77,39 @@ final class MemberObligation extends Model
     public function allocations(): HasMany
     {
         return $this->hasMany(PaymentAllocation::class);
+    }
+
+    /**
+     * Overdue is derived from the period's grace date rather than stored as a
+     * status of its own.
+     *
+     * A stored flag would need a sweep to set it and another to unset it when
+     * somebody pays, and it would be wrong in between. Deriving it means the
+     * answer is always current and there is no migration to run when the club
+     * changes the grace day — the effective-dated setting already handles that.
+     */
+    public function isOverdue(): bool
+    {
+        if (! $this->status->isSettleable()) {
+            return false;
+        }
+
+        return $this->contributionPeriod->grace_ends_on->isBefore(today());
+    }
+
+    /**
+     * Obligations still owing after the grace period closed.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    #[Scope]
+    protected function overdue(Builder $query): Builder
+    {
+        return $query
+            ->whereIn('status', [ObligationStatus::Unpaid->value, ObligationStatus::PartiallyPaid->value])
+            ->whereHas('contributionPeriod', fn (Builder $period): Builder => $period
+                ->whereDate('grace_ends_on', '<', today()));
     }
 
     /**

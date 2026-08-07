@@ -1,11 +1,14 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import MeetingAttendanceController from '@/actions/App/Http/Controllers/MeetingAttendanceController';
+import MeetingCancellationController from '@/actions/App/Http/Controllers/MeetingCancellationController';
 import MeetingMinutesController from '@/actions/App/Http/Controllers/MeetingMinutesController';
+import MeetingMinutesCorrectionController from '@/actions/App/Http/Controllers/MeetingMinutesCorrectionController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
     Table,
     TableBody,
@@ -36,6 +39,8 @@ const ATTENDANCE_OPTIONS = ['present', 'apologies', 'absent'] as const;
 export default function MeetingShow({
     meeting,
     canManageMinutes,
+    canCancel,
+    canCorrectMinutes,
     activeMembers,
     attendance,
     minutes,
@@ -45,6 +50,8 @@ export default function MeetingShow({
 }: {
     meeting: Meeting;
     canManageMinutes: boolean;
+    canCancel: boolean;
+    canCorrectMinutes: boolean;
     activeMembers: MemberOption[];
     attendance: AttendanceRow[];
     minutes: MinuteSummary | null;
@@ -76,8 +83,51 @@ export default function MeetingShow({
                         title={meeting.title}
                         description={`${meeting.reference} · ${meeting.scheduled_for.slice(0, 16).replace('T', ' ')}${meeting.location ? ` · ${meeting.location}` : ''}`}
                     />
-                    <Badge variant="secondary">{meeting.status}</Badge>
+                    <div className="flex items-center gap-3">
+                        <Badge variant="secondary">{meeting.status}</Badge>
+
+                        {canCancel && (
+                            <Form
+                                {...MeetingCancellationController.update.form(
+                                    meeting.id,
+                                )}
+                                options={{ preserveScroll: true }}
+                                className="flex items-end gap-2"
+                            >
+                                {({ processing, errors }) => (
+                                    <>
+                                        <div className="grid gap-1">
+                                            <Input
+                                                name="reason"
+                                                required
+                                                placeholder="Reason for cancelling"
+                                                aria-label="Reason for cancelling"
+                                                className="w-56"
+                                            />
+                                            <InputError
+                                                message={errors.reason}
+                                            />
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            variant="destructive"
+                                            disabled={processing}
+                                        >
+                                            Cancel meeting
+                                        </Button>
+                                    </>
+                                )}
+                            </Form>
+                        )}
+                    </div>
                 </div>
+
+                {meeting.cancellation_reason && (
+                    <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                        <span className="font-medium">Cancelled.</span>{' '}
+                        {meeting.cancellation_reason}
+                    </div>
+                )}
 
                 <Tabs defaultValue="agenda">
                     <TabsList>
@@ -328,6 +378,67 @@ export default function MeetingShow({
                                             )}
                                         </>
                                     )}
+
+                                {canCorrectMinutes && (
+                                    <div className="space-y-3 rounded-md border border-dashed p-4">
+                                        <div>
+                                            <p className="text-sm font-medium">
+                                                Correct these minutes
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                The confirmed version stays in
+                                                the record exactly as it is.
+                                                Your correction becomes the next
+                                                version and has to be confirmed
+                                                again before it is official.
+                                            </p>
+                                        </div>
+
+                                        <Form
+                                            {...MeetingMinutesCorrectionController.store.form(
+                                                meeting.id,
+                                            )}
+                                            options={{ preserveScroll: true }}
+                                            resetOnSuccess
+                                            className="space-y-3"
+                                        >
+                                            {({ processing, errors }) => (
+                                                <>
+                                                    <Textarea
+                                                        name="body"
+                                                        rows={8}
+                                                        required
+                                                        defaultValue={
+                                                            minutes?.body ?? ''
+                                                        }
+                                                        aria-label="Corrected minutes"
+                                                    />
+                                                    <InputError
+                                                        message={errors.body}
+                                                    />
+
+                                                    <Input
+                                                        name="reason"
+                                                        required
+                                                        placeholder="What was wrong with the confirmed version?"
+                                                        aria-label="Reason for the correction"
+                                                    />
+                                                    <InputError
+                                                        message={errors.reason}
+                                                    />
+
+                                                    <Button
+                                                        type="submit"
+                                                        variant="outline"
+                                                        disabled={processing}
+                                                    >
+                                                        Publish correction
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </Form>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -344,6 +455,14 @@ export default function MeetingShow({
                                                 {version.confirmed_at
                                                     ? ' — confirmed'
                                                     : ''}
+                                                {version.correction_reason && (
+                                                    <span className="block pl-4 text-xs">
+                                                        Correction:{' '}
+                                                        {
+                                                            version.correction_reason
+                                                        }
+                                                    </span>
+                                                )}
                                             </li>
                                         ))}
                                     </ul>

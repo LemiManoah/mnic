@@ -530,8 +530,38 @@ It cannot be retrieved afterwards.
 4. Corrections? Publish again — that creates version 2. Version 1 is kept.
 5. When the membership accepts them, **Confirm these minutes**.
 
-**Once confirmed, minutes are frozen forever.** No one can edit them. Confirm
-only when the club has actually accepted them.
+**Once confirmed, minutes cannot be edited.** Confirm only when the club has
+actually accepted them. If a mistake turns up afterwards, see below.
+
+### Correcting minutes that were already confirmed
+
+> **As Secretary,** I want to fix an error in a confirmed record, **but** I do
+> not want it to look as though the original said something it did not.
+
+A correction is a **superseding version**, not an edit.
+
+**Minutes** tab → **Correct these minutes**. The current text is pre-filled;
+change what is wrong, say what was wrong with it, and publish.
+
+What happens:
+
+- The confirmed version stays in the record exactly as it was. Nothing is
+  overwritten and nothing is deleted.
+- Your correction becomes the next version, and it carries your reason.
+- **It is not official until it is confirmed on its own account.** The club
+  accepts a correction the same way it accepted the original.
+
+Both versions show in the version history, with the reason attached to the
+replacement. Anyone reading back can see what was originally agreed, what
+replaced it, and why.
+
+### Calling off a meeting
+
+**Meetings** → open it → **Cancel meeting**, with a reason. The reason shows on
+the meeting from then on.
+
+Only a meeting that **has not happened yet** can be cancelled. Once attendance
+or minutes exist, cancelling would strand them, so the system refuses.
 
 ---
 
@@ -584,6 +614,22 @@ You cannot approve an expense you requested yourself.
 came from.
 
 Owners update their own actions. You can update anybody's.
+
+### Taking a proposal back off the table
+
+> **As the Chairperson,** I want to pull a motion that has been overtaken by
+> events, **so that** the club is not voting on something nobody intends to act
+> on.
+
+Open the proposal → **Withdraw this proposal**, and give a reason.
+
+You can only withdraw a proposal that has **not yet reached a result** — a draft
+or one where voting is still open. Once it has passed or been rejected, the
+membership has spoken, and the way to undo that is another proposal.
+
+If people had already voted before you withdrew it, **their votes stay in the
+record**. That is deliberate: the club should be able to see that members had
+committed a position before the motion was pulled.
 
 ---
 
@@ -707,6 +753,37 @@ what address.
 
 ---
 
+## 14a. What the system tells you, and when
+
+Once email is switched on (see §16), you will hear about the following without
+having to log in. Everything also appears in the app itself, so nothing is lost
+if an email goes astray.
+
+| You are told when… | Who hears |
+|---|---|
+| A new month opens for contributions | Every active member |
+| Your payment is verified | Just you |
+| Your payment is rejected, and why | Just you |
+| Your grace period closed and you still owe | Just you |
+| A meeting is scheduled | Every active member |
+| Minutes are published, or corrected | Every active member |
+| Voting opens on a proposal | Everyone on the frozen roll for that vote |
+| A vote closes within a day **and you have not voted** | Only the members still to vote |
+| You are given an action | Just the owner |
+| Your action is past its due date | Just the owner |
+
+Two deliberate choices worth knowing:
+
+**The closing-vote reminder skips people who already voted.** Being nagged about
+something you have done is how people learn to ignore the emails entirely.
+
+**You are only chased once the grace period has actually closed.** The system
+does not badger anybody who is merely close to the deadline.
+
+The chase runs once a day, mid-morning.
+
+---
+
 ## 15. Things the system will refuse to do
 
 When you hit one of these, the system is working correctly.
@@ -729,7 +806,10 @@ When you hit one of these, the system is working correctly.
 | Stand twice in the same election | One candidate entry per member |
 | Transfer an office to whoever already holds it | Nothing would change |
 | Hold two offices at once | Taking a new one closes the old |
-| Edit confirmed minutes | Confirmed minutes are the official record |
+| Edit confirmed minutes | Confirmed minutes are the official record — publish a correction instead |
+| Correct minutes that were never confirmed | Nothing official to supersede; republish instead |
+| Withdraw a proposal that already passed or was rejected | The membership has spoken; raise a new proposal |
+| Cancel a meeting that has already been held | Attendance and minutes hang off it |
 | Edit a locked month | Locked is permanent |
 | Confirm a reconciliation with unexplained differences | Every difference must be documented |
 | Open the same contribution month twice | One period per month |
@@ -743,31 +823,27 @@ When you hit one of these, the system is working correctly.
 
 Being straight about the gaps, so nobody is caught out.
 
-**No notifications of any kind.** Nothing emails or messages you. Not when a
-period opens, not when your payment is verified, not when a vote is closing, not
-when your action is overdue. Everyone must remember to log in. This is the
-biggest practical gap, and until it is closed the club still needs its WhatsApp
-group for reminders.
+**Email is not switched on yet.** The system now writes notifications and will
+send them, but the mail transport is still pointed at a log file, so nothing
+leaves the server. Until an administrator configures it, keep using the WhatsApp
+group for reminders. Notifications are also recorded in the app, so nothing is
+lost in the meantime.
 
-**Arrears are not flagged automatically.** The system knows the grace period
-ended, but nothing sweeps through and marks people overdue. You can see who owes
-what, but it will not chase anyone.
+**Most seeded email addresses cannot receive mail anyway.** Even once email is
+switched on, the placeholder `.test` addresses will bounce. Real addresses have
+to be loaded first.
 
-**Reconciliation differences cannot be explained on screen.** The behaviour
-exists, but the form to add and resolve a difference item is not built. In
-practice this means **a reconciliation with a difference cannot currently be
-confirmed** — only clean ones can go through. If the bank and the system
-disagree, the month cannot be closed until this is built.
+**Not everything notifies yet.** Expenses being approved or rejected, monthly
+reports being published, and elections opening send nothing. Reminders also only
+go out *after* a deadline has passed — nothing warns you it is approaching.
 
 **No receipts, no downloads.** Nothing prints. No PDF receipt when a payment is
 verified, no CSV export, no member statement to hand over. Everything must be
 read on screen.
 
-**Some things cannot be cancelled or withdrawn.** A proposal cannot be
-withdrawn once created, a meeting cannot be cancelled, and an action item cannot
-be cancelled — only completed or left open. Confirmed minutes cannot be
-corrected at all; a mistake in them has to be handled by a motion at the next
-meeting.
+**A locked month cannot be adjusted.** Once a month is closed it is final. If
+something genuinely needs correcting afterwards there is no controlled way to do
+it, so check carefully before closing.
 
 **Password reset does not work for seeded accounts.** Most seeded email
 addresses are placeholders that cannot receive mail. Ask the Administrator.

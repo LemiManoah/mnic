@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read string|null $location
  * @property-read string|null $agenda
  * @property-read MeetingStatus $status
+ * @property-read string|null $cancellation_reason
  * @property-read string|null $scheduled_by_member_id
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
@@ -46,6 +47,7 @@ final class Meeting extends Model
             'location' => 'string',
             'agenda' => 'string',
             'status' => MeetingStatus::class,
+            'cancellation_reason' => 'string',
             'scheduled_by_member_id' => 'string',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

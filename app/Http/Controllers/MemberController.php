@@ -70,6 +70,21 @@ final readonly class MemberController
         $canViewActivity = $user->can('viewAny', AuditLog::class);
         $canUpdate = $user->can('update', $member);
 
+        // Built up front rather than as a ternary in the render array: a
+        // standalone `: []` arm is attributed to the statement's first line, so
+        // coverage can never mark it hit even when a test takes that branch.
+        $auditLogs = [];
+
+        if ($canViewActivity) {
+            $auditLogs = AuditLog::query()
+                ->with('actorMember')
+                ->where('auditable_type', Member::class)
+                ->where('auditable_id', $member->id)
+                ->latest()
+                ->limit(50)
+                ->get();
+        }
+
         return Inertia::render('member/show', [
             // The linked user and referrer are hidden so a profile view does not
             // leak another member's account record; the fields the page needs
@@ -113,15 +128,7 @@ final readonly class MemberController
                     'reference' => $payment->reference,
                     'status' => $payment->status,
                 ]),
-            'auditLogs' => $canViewActivity
-                ? AuditLog::query()
-                    ->with('actorMember')
-                    ->where('auditable_type', Member::class)
-                    ->where('auditable_id', $member->id)
-                    ->latest()
-                    ->limit(50)
-                    ->get()
-                : [],
+            'auditLogs' => $auditLogs,
         ]);
     }
 

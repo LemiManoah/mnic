@@ -11,6 +11,7 @@ use App\Models\ContributionPeriod;
 use App\Models\Member;
 use App\Models\MemberObligation;
 use App\Models\Setting;
+use App\Notifications\ContributionPeriodOpened;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -18,8 +19,10 @@ use RuntimeException;
 
 final readonly class OpenContributionPeriod
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -38,7 +41,7 @@ final readonly class OpenContributionPeriod
         $dueDay = $this->settingValue('due_day');
         $graceDay = $this->settingValue('grace_day');
 
-        return DB::transaction(function () use ($year, $month, $amount, $dueDay, $graceDay, $actor, $ipAddress): ContributionPeriod {
+        $period = DB::transaction(function () use ($year, $month, $amount, $dueDay, $graceDay, $actor, $ipAddress): ContributionPeriod {
             $period = ContributionPeriod::query()->create([
                 'year' => $year,
                 'month' => $month,
@@ -74,6 +77,10 @@ final readonly class OpenContributionPeriod
 
             return $period;
         });
+
+        $this->notifyMembers->toActiveMembers(new ContributionPeriodOpened($period));
+
+        return $period;
     }
 
     private function settingValue(string $key): int

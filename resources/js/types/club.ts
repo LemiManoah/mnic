@@ -172,6 +172,7 @@ export type Meeting = {
     location: string | null;
     agenda: string | null;
     status: MeetingStatus;
+    cancellation_reason: string | null;
     present_count?: number;
 };
 
@@ -192,12 +193,15 @@ export type MinuteSummary = {
     version: number;
     body: string;
     confirmed_at: string | null;
+    /** Set when this version supersedes an earlier confirmed one. */
+    correction_reason: string | null;
 };
 
 export type MinuteVersion = {
     id: string;
     version: number;
     confirmed_at: string | null;
+    correction_reason: string | null;
 };
 
 export type Proposal = {
@@ -213,6 +217,7 @@ export type Proposal = {
     quorum_required: number;
     approval_percent: number;
     outcome_note: string | null;
+    withdrawal_reason: string | null;
     votes_count?: number;
 };
 

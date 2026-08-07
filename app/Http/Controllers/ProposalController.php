@@ -69,6 +69,7 @@ final readonly class ProposalController
             'proposal' => $proposal,
             'canManageVoting' => $user->can('manageVoting', $proposal),
             'canVote' => $user->can('vote', $proposal),
+            'canWithdraw' => $user->can('withdraw', $proposal),
             'tally' => [
                 'for' => $proposal->countChoice(VoteChoice::For),
                 'against' => $proposal->countChoice(VoteChoice::Against),

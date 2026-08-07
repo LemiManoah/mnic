@@ -10,14 +10,17 @@ use App\Models\Member;
 use App\Models\Proposal;
 use App\Models\ProposalEligibleVoter;
 use App\Models\Setting;
+use App\Notifications\ProposalVotingOpened;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
 final readonly class OpenProposalVoting
 {
-    public function __construct(private RecordAuditEvent $recordAuditEvent)
-    {
+    public function __construct(
+        private RecordAuditEvent $recordAuditEvent,
+        private NotifyMembers $notifyMembers,
+    ) {
         //
     }
 
@@ -32,7 +35,7 @@ final readonly class OpenProposalVoting
         $quorumPercent = $this->settingValue('quorum_percent');
         $approvalPercent = $this->settingValue('approval_percent');
 
-        return DB::transaction(function () use ($proposal, $closesAt, $quorumPercent, $approvalPercent, $actor, $ipAddress): Proposal {
+        $proposal = DB::transaction(function () use ($proposal, $closesAt, $quorumPercent, $approvalPercent, $actor, $ipAddress): Proposal {
             $before = $proposal->toArray();
 
             // Freeze the electorate: everyone active right now, and nobody else,
@@ -72,6 +75,21 @@ final readonly class OpenProposalVoting
 
             return $proposal;
         });
+
+        // Told to the frozen electorate rather than the active roll: those are
+        // the same people at this instant, but only the snapshot stays true if
+        // somebody joins or leaves while voting is open.
+        $this->notifyMembers->handle(
+            $proposal->eligibleVoters()
+                ->with('member.user')
+                ->get()
+                ->map(fn (ProposalEligibleVoter $eligible) => $eligible->member)
+                ->filter()
+                ->values(),
+            new ProposalVotingOpened($proposal),
+        );
+
+        return $proposal;
     }
 
     private function settingValue(string $key): int
