@@ -41,6 +41,9 @@ final class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
                 'roles' => $request->user()?->getRoleNames() ?? [],
+                // Drives the badge in the sidebar, so it has to be on every
+                // response rather than only the notifications page.
+                'unread_notifications' => $request->user()?->unreadNotifications()->count() ?? 0,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

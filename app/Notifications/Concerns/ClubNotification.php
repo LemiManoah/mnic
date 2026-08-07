@@ -18,6 +18,23 @@ use Illuminate\Notifications\Messages\MailMessage;
 trait ClubNotification
 {
     /**
+     * A rejected send is retried rather than lost.
+     *
+     * Club-wide notifications go to the whole roll at once, and mail providers
+     * throttle bursts — Mailtrap's sandbox rejects anything past about one a
+     * second. Those rejections are transient, so failing on the first attempt
+     * would silently drop a member's email for a reason that fixes itself a few
+     * seconds later.
+     *
+     * Laravel reads both of these with `property_exists`, so `backoff` has to
+     * be a property and not a method.
+     */
+    public int $tries = 5;
+
+    /** @var list<int> */
+    public array $backoff = [10, 30, 60, 120];
+
+    /**
      * @return list<string>
      */
     public function via(object $notifiable): array

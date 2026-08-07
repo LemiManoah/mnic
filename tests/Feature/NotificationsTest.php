@@ -126,6 +126,26 @@ it('tells the active roll when minutes are published', function (): void {
     Notification::assertSentTo($member->user, MinutesPublished::class);
 });
 
+it('stores the subject, body and link the inbox page reads', function (): void {
+    $member = memberWithRole(App\Enums\ClubRole::Member);
+    $meeting = Meeting::factory()->create(['title' => 'Half-year review']);
+
+    resolve(NotifyMembers::class)->handle([$member], new MeetingScheduled($meeting));
+
+    // NotificationControllerTest writes rows in this shape by hand, so if the
+    // trait ever changes it, this is what catches the drift.
+    Notification::assertSentTo(
+        $member->user,
+        MeetingScheduled::class,
+        function (MeetingScheduled $notification) use ($member): bool {
+            $data = $notification->toArray($member->user);
+
+            return array_keys($data) === ['subject', 'body', 'url']
+                && str_contains((string) $data['subject'], 'Half-year review');
+        },
+    );
+});
+
 it('sends each recipient once even when a member is listed twice', function (): void {
     $member = memberWithRole(App\Enums\ClubRole::Member);
     $meeting = Meeting::factory()->create();

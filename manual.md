@@ -755,9 +755,16 @@ what address.
 
 ## 14a. What the system tells you, and when
 
-Once email is switched on (see §16), you will hear about the following without
-having to log in. Everything also appears in the app itself, so nothing is lost
-if an email goes astray.
+Everything below lands in two places: your **Notifications** page in the app,
+and — once email is switched on (see §16) — your inbox.
+
+**Notifications** is the first item under Dashboard in the sidebar, with a
+count next to it when you have unread ones. Open it to see everything, filter to
+unread only, jump straight to whatever a notification is about, and mark items
+read one at a time or all at once.
+
+Right now the in-app page is the one that actually works, because most seeded
+email addresses are placeholders that cannot receive mail.
 
 | You are told when… | Who hears |
 |---|---|
@@ -823,11 +830,11 @@ When you hit one of these, the system is working correctly.
 
 Being straight about the gaps, so nobody is caught out.
 
-**Email is not switched on yet.** The system now writes notifications and will
-send them, but the mail transport is still pointed at a log file, so nothing
-leaves the server. Until an administrator configures it, keep using the WhatsApp
-group for reminders. Notifications are also recorded in the app, so nothing is
-lost in the meantime.
+**Email is not switched on yet.** Notifications appear on your **Notifications**
+page in the app straight away, but the mail transport is still pointed at a log
+file, so nothing reaches your inbox. Until an administrator configures it, you
+have to open the app to see them — and the club still needs its WhatsApp group
+for anything urgent.
 
 **Most seeded email addresses cannot receive mail anyway.** Even once email is
 switched on, the placeholder `.test` addresses will bounce. Real addresses have

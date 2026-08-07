@@ -21,6 +21,8 @@ use App\Http\Controllers\MemberObligationAdjustmentController;
 use App\Http\Controllers\MemberRoleController;
 use App\Http\Controllers\MemberStatusController;
 use App\Http\Controllers\MonthlyReportController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NotificationReadController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentEvidenceController;
 use App\Http\Controllers\PaymentRejectionController;
@@ -60,6 +62,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 });
 
 Route::middleware('auth')->group(function (): void {
+    // Notifications — a member's own inbox, so no policy gate.
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notification.index');
+    Route::post('notifications/read', [NotificationReadController::class, 'store'])->name('notification-read.store');
+    Route::put('notifications/{notification}/read', [NotificationReadController::class, 'update'])
+        ->name('notification-read.update');
+
     // Members...
     Route::get('members', [MemberController::class, 'index'])->name('member.index');
     Route::post('members', [MemberController::class, 'store'])->name('member.store');

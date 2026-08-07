@@ -421,3 +421,12 @@ export type PositionPollCandidate = {
     /** Null while voting is open, so the running count stays hidden. */
     votes: number | null;
 };
+
+export type NotificationRow = {
+    id: string;
+    subject: string;
+    body: string;
+    url: string | null;
+    read_at: string | null;
+    created_at: string | null;
+};

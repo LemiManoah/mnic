@@ -104,7 +104,7 @@ final class MemberObligation extends Model
      * @return Builder<self>
      */
     #[Scope]
-    protected function overdue(Builder $query): Builder
+    public function overdue(Builder $query): Builder
     {
         return $query
             ->whereIn('status', [ObligationStatus::Unpaid->value, ObligationStatus::PartiallyPaid->value])

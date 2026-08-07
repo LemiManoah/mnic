@@ -9,6 +9,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
@@ -22,6 +23,14 @@ pest()->extend(TestCase::class)
         Http::preventStrayRequests();
         Process::preventStrayProcesses();
         Sleep::fake();
+
+        // Faked for every test, the same way stray HTTP and processes are.
+        // Club-wide notifications go to the whole roll across two channels, and
+        // the seeder opens eight periods, so a suite that really rendered them
+        // spent longer sending mail nobody reads than running assertions.
+        // Tests that care assert against the fake; tests that need real rows in
+        // the notifications table write them directly.
+        Notification::fake();
 
         $this->freezeTime();
     })

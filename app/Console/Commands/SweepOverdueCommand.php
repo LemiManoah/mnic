@@ -24,7 +24,7 @@ use Illuminate\Console\Command;
  * — it reads what is already true and tells the people it affects. That means
  * it is safe to run twice in a day, and safe to miss a day.
  */
-final class SweepOverdue extends Command
+final class SweepOverdueCommand extends Command
 {
     protected $signature = 'club:sweep-overdue';
 

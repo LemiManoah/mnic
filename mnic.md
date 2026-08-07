@@ -28,9 +28,17 @@ Run everything except coverage with:
 composer lint && bun run test:types && php artisan test --compact --exclude-testsuite Browser
 ```
 
-**The suite takes about 22 minutes.** `MusuwaNationSeederTest` alone accounts
-for roughly eight of them, because `beforeEach` re-runs the whole seeder for
-every test in the file. Worth fixing before the suite grows further — see §5.
+**The suite takes about 22 minutes**, and watch it. It briefly hit 48 when
+notifications landed: nothing faked them, so every test that opened a period,
+scheduled a meeting or verified a payment really rendered Blade mail — and
+`MusuwaNationSeederTest` does that eighteen times over eight periods and twenty
+members. `Notification::fake()` now runs in the global `beforeEach` in
+`tests/Pest.php` alongside `Http::preventStrayRequests()`. Anything reading the
+`notifications` table must therefore write rows directly rather than calling
+`notify()`.
+
+`MusuwaNationSeederTest` still accounts for roughly a third of the runtime
+because `beforeEach` re-runs the whole seeder per test — see §5.
 
 ## 2. Phases
 
@@ -239,11 +247,34 @@ Notifications fire **after** the transaction commits, never inside it, so a
 rollback cannot leave a member holding an email about something that did not
 happen.
 
+**Sending is retried, not dropped.** `ClubNotification` sets `$tries = 5` with a
+`[10, 30, 60, 120]` backoff. Club-wide notifications go to the whole roll at
+once and mail providers throttle bursts — Mailtrap's sandbox rejects past about
+one a second with `550 5.7.0 Too many emails per second`. Those rejections are
+transient, so a single attempt would silently lose a member's email. Note that
+Laravel reads `tries` and `backoff` with `property_exists`, so `backoff` must be
+a property, not a method.
+
+Every notification becomes **two** queued jobs — one per channel. That is
+Laravel's behaviour, not a bug: `NotificationSender` dispatches one
+`SendQueuedNotifications` per notifiable per channel. Expect the `database` job
+to finish in milliseconds and the `mail` job to take about a second.
+
 Still outstanding:
 
 - Expense approved/rejected and monthly report published have no notification.
 - Position polls notify nobody — only proposals do.
 - Nothing yet warns that a deadline is *approaching*, only that it has passed.
+
+**In-app inbox** (built 7 August): `/notifications` lists a member's own
+notifications with an unread filter, per-item and mark-all-read, and a badge in
+the sidebar fed by `auth.unread_notifications` shared from
+`HandleInertiaRequests`. There is no policy on it — a member's inbox is theirs by
+definition — so the guard is that every query is *scoped* to the signed-in user
+rather than filtered afterwards. `MarkNotificationsRead` scopes the same way, so
+posting somebody else's notification id is a no-op rather than a 403. This
+matters more than usual while 19 of 20 seeded accounts have unreachable `.test`
+addresses: in-app is the only channel that reaches them today.
 
 **Exit:** a member learns they are in arrears without anyone telling them.
 

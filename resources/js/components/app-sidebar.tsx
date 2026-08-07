@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     IconAward,
+    IconBell,
     IconCalendarEvent,
     IconCash,
     IconChecklist,
@@ -40,6 +41,7 @@ import { index as externalAccountIndex } from '@/routes/external-account';
 import { index as meetingIndex } from '@/routes/meeting';
 import { index as memberIndex } from '@/routes/member';
 import { index as monthlyReportIndex } from '@/routes/monthly-report';
+import { index as notificationIndex } from '@/routes/notification';
 import { index as paymentIndex } from '@/routes/payment';
 import { index as positionIndex } from '@/routes/position';
 import { index as positionPollIndex } from '@/routes/position-poll';
@@ -61,6 +63,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     // Day-to-day club work, in the order a member is likely to need it.
     const navMain = [
         { title: 'Dashboard', url: dashboard().url, icon: IconDashboard },
+        {
+            title: 'Notifications',
+            url: notificationIndex().url,
+            icon: IconBell,
+            badge: auth.unread_notifications,
+        },
         { title: 'Members', url: memberIndex().url, icon: IconUsers },
         {
             title: 'Contribution periods',

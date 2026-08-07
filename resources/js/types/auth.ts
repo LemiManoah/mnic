@@ -13,6 +13,7 @@ export type User = {
 export type Auth = {
     user: User;
     roles: string[];
+    unread_notifications: number;
 };
 
 export type TwoFactorSetupData = {
