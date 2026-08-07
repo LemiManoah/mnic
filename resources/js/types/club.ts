@@ -56,7 +56,12 @@ export type ObligationStatus =
     | 'waived'
     | 'cancelled';
 
-export type PaymentStatus = 'submitted' | 'verified' | 'rejected' | 'reversed';
+export type PaymentStatus =
+    | 'submitted'
+    | 'verified'
+    | 'rejected'
+    | 'reversal_pending'
+    | 'reversed';
 
 export type PaymentMethod = 'mobile_money' | 'bank_transfer' | 'cash';
 
@@ -122,8 +127,10 @@ export type PaymentRow = {
     reviewed_by: string | null;
     rejection_reason: string | null;
     can_review: boolean;
-    can_reverse: boolean;
+    can_request_reversal: boolean;
+    can_decide_reversal: boolean;
     reversal_reason: string | null;
+    reversal_requested_by: string | null;
     evidence: PaymentEvidenceFile[];
 };
 
@@ -198,8 +205,6 @@ export type Proposal = {
     meeting_id: string | null;
     title: string;
     description: string;
-    election_position: ClubPosition | null;
-    election_member_id: string | null;
     status: ProposalStatus;
     opened_at: string | null;
     closes_at: string | null;
@@ -368,4 +373,46 @@ export type AuditLog = {
     after: Record<string, unknown> | null;
     ip_address: string | null;
     created_at: string;
+};
+
+export type PositionPollStatus = 'draft' | 'open' | 'decided' | 'failed';
+
+export type PositionPoll = {
+    id: string;
+    position: ClubPosition;
+    title: string;
+    description: string | null;
+    status: PositionPollStatus;
+    opened_at: string | null;
+    closes_at: string | null;
+    closed_at: string | null;
+    eligible_voter_count: number;
+    quorum_required: number;
+    outcome_note: string | null;
+    candidates_count?: number;
+    votes_count?: number;
+};
+
+/** The shape PositionPollController@show sends, already formatted for display. */
+export type PositionPollDetail = {
+    id: string;
+    position: string;
+    title: string;
+    description: string | null;
+    status: PositionPollStatus;
+    opened_at: string | null;
+    closes_at: string | null;
+    closed_at: string | null;
+    eligible_voter_count: number;
+    quorum_required: number;
+    outcome_note: string | null;
+    winner_name: string | null;
+};
+
+export type PositionPollCandidate = {
+    id: string;
+    member_name: string;
+    manifesto: string | null;
+    /** Null while voting is open, so the running count stays hidden. */
+    votes: number | null;
 };

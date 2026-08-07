@@ -167,9 +167,7 @@ export default function ContributionPeriodShow({
     const expected = obligations.reduce(
         (sum, o) =>
             sum +
-            (o.status === 'waived' || o.status === 'cancelled'
-                ? 0
-                : o.amount),
+            (o.status === 'waived' || o.status === 'cancelled' ? 0 : o.amount),
         0,
     );
     const collected = obligations.reduce((sum, o) => sum + o.amount_paid, 0);

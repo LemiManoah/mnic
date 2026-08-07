@@ -7,13 +7,13 @@ use App\Enums\ClubPosition;
 use App\Models\AuditLog;
 use App\Models\Member;
 use App\Models\PositionHolding;
-use App\Models\Proposal;
+use App\Models\PositionPoll;
 
 it('transfers a position and preserves the previous holder history', function (): void {
     $outgoing = Member::factory()->create(['position' => ClubPosition::Treasurer]);
     $successor = Member::factory()->create();
     $actor = Member::factory()->create();
-    $proposal = Proposal::factory()->create();
+    $poll = PositionPoll::factory()->create();
 
     $current = PositionHolding::factory()->create([
         'member_id' => $outgoing->id,
@@ -27,7 +27,7 @@ it('transfers a position and preserves the previous holder history', function ()
         $successor,
         '2026-08-06',
         $actor,
-        $proposal,
+        $poll,
         'Election passed',
         '127.0.0.1',
     );
@@ -36,7 +36,7 @@ it('transfers a position and preserves the previous holder history', function ()
         ->and($outgoing->fresh()?->position)->toBeNull()
         ->and($successor->fresh()?->position)->toBe(ClubPosition::Treasurer)
         ->and($holding->member_id)->toBe($successor->id)
-        ->and($holding->elected_via_proposal_id)->toBe($proposal->id);
+        ->and($holding->elected_via_position_poll_id)->toBe($poll->id);
 
     expect(AuditLog::query()->where('auditable_id', $holding->id)->where('event', 'position.transferred')->exists())
         ->toBeTrue();

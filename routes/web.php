@@ -25,6 +25,10 @@ use App\Http\Controllers\PaymentRejectionController;
 use App\Http\Controllers\PaymentReversalController;
 use App\Http\Controllers\PaymentVerificationController;
 use App\Http\Controllers\PositionController;
+use App\Http\Controllers\PositionPollCandidateController;
+use App\Http\Controllers\PositionPollController;
+use App\Http\Controllers\PositionPollVoteController;
+use App\Http\Controllers\PositionPollVotingController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ProposalVotingController;
 use App\Http\Controllers\ReconciliationController;
@@ -64,6 +68,15 @@ Route::middleware('auth')->group(function (): void {
     Route::get('positions', [PositionController::class, 'index'])->name('position.index');
     Route::post('positions', [PositionController::class, 'store'])->name('position.store');
 
+    // Elections: one poll per office, decided by plurality...
+    Route::get('positions/polls', [PositionPollController::class, 'index'])->name('position-poll.index');
+    Route::post('positions/polls', [PositionPollController::class, 'store'])->name('position-poll.store');
+    Route::get('positions/polls/{poll}', [PositionPollController::class, 'show'])->name('position-poll.show');
+    Route::post('positions/polls/{poll}/candidates', [PositionPollCandidateController::class, 'store'])->name('position-poll-candidate.store');
+    Route::post('positions/polls/{poll}/voting', [PositionPollVotingController::class, 'store'])->name('position-poll-voting.store');
+    Route::put('positions/polls/{poll}/voting', [PositionPollVotingController::class, 'update'])->name('position-poll-voting.update');
+    Route::post('positions/polls/{poll}/votes', [PositionPollVoteController::class, 'store'])->name('position-poll-vote.store');
+
     // Contribution Periods...
     Route::get('contribution-periods', [ContributionPeriodController::class, 'index'])->name('contribution-period.index');
     Route::post('contribution-periods', [ContributionPeriodController::class, 'store'])->name('contribution-period.store');
@@ -75,7 +88,10 @@ Route::middleware('auth')->group(function (): void {
     Route::post('payments', [PaymentController::class, 'store'])->name('payment.store');
     Route::put('payments/{payment}/verification', [PaymentVerificationController::class, 'update'])->name('payment-verification.update');
     Route::put('payments/{payment}/rejection', [PaymentRejectionController::class, 'update'])->name('payment-rejection.update');
+    // Reversing a verified payment takes two officers: one requests, another decides.
+    Route::post('payments/{payment}/reversal', [PaymentReversalController::class, 'store'])->name('payment-reversal.store');
     Route::put('payments/{payment}/reversal', [PaymentReversalController::class, 'update'])->name('payment-reversal.update');
+    Route::delete('payments/{payment}/reversal', [PaymentReversalController::class, 'destroy'])->name('payment-reversal.destroy');
     Route::get('payments/{payment}/evidence/{evidence}', [PaymentEvidenceController::class, 'show'])
         ->scopeBindings()
         ->name('payment-evidence.show');

@@ -9,6 +9,8 @@ enum PaymentStatus: string
     case Submitted = 'submitted';
     case Verified = 'verified';
     case Rejected = 'rejected';
+    /** A reversal has been requested and is waiting on a second officer. */
+    case ReversalPending = 'reversal_pending';
     case Reversed = 'reversed';
 
     public function label(): string
@@ -17,6 +19,7 @@ enum PaymentStatus: string
             self::Submitted => 'Submitted',
             self::Verified => 'Verified',
             self::Rejected => 'Rejected',
+            self::ReversalPending => 'Reversal pending',
             self::Reversed => 'Reversed',
         };
     }

@@ -27,8 +27,7 @@ final readonly class SubmitReconciliation
         return DB::transaction(function () use ($reconciliation, $actor, $ipAddress): Reconciliation {
             $before = $reconciliation->toArray();
 
-            $reconciliation->loadMissing('contributionPeriod');
-            $period = $reconciliation->contributionPeriod;
+            $period = $reconciliation->contributionPeriod()->firstOrFail();
 
             // Expected = opening + verified inflows − settled outflows for the
             // month. The difference against the external statement is what the

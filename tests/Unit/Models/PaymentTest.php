@@ -30,6 +30,11 @@ test('to array', function (): void {
             'rejection_reason',
             'created_at',
             'updated_at',
+            'reversed_by_member_id',
+            'reversed_at',
+            'reversal_reason',
+            'reversal_requested_by_member_id',
+            'reversal_requested_at',
         ]);
 });
 

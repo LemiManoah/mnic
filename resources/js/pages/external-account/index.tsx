@@ -3,6 +3,7 @@ import { useState } from 'react';
 import ExternalAccountController from '@/actions/App/Http/Controllers/ExternalAccountController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -135,10 +136,12 @@ export default function ExternalAccountIndex({
     accounts,
     canCreate,
     typeOptions,
+    filters,
 }: {
     accounts: ExternalAccount[];
     canCreate: boolean;
     typeOptions: Option[];
+    filters: { search: string | null; type: string | null };
 }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -156,6 +159,20 @@ export default function ExternalAccountIndex({
                         <AddAccountDialog typeOptions={typeOptions} />
                     )}
                 </div>
+
+                <ListFilters
+                    url={externalAccountIndex().url}
+                    search={filters.search}
+                    placeholder="Search account name or institution…"
+                    filters={[
+                        {
+                            name: 'type',
+                            label: 'Type',
+                            value: filters.type,
+                            options: typeOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

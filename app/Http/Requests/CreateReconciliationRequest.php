@@ -29,7 +29,7 @@ final class CreateReconciliationRequest extends FormRequest
                 'string',
                 Rule::exists(ContributionPeriod::class, 'id'),
                 Rule::unique(Reconciliation::class, 'contribution_period_id')
-                    ->where('external_account_id', $this->input('external_account_id')),
+                    ->where('external_account_id', $this->string('external_account_id')->value() ?: null),
             ],
             'external_account_id' => ['nullable', 'string', Rule::exists(ExternalAccount::class, 'id')],
             'opening_balance' => ['required', 'integer', 'min:0'],

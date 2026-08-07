@@ -1,10 +1,11 @@
 import { Head } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { index as auditLogIndex } from '@/routes/audit-log';
-import type { AuditLog, BreadcrumbItem, Paginated } from '@/types';
+import type { AuditLog, BreadcrumbItem, Option, Paginated } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -15,8 +16,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function AuditLogIndex({
     auditLogs,
+    filters,
+    eventOptions,
 }: {
     auditLogs: Paginated<AuditLog>;
+    filters: { search: string | null; event: string | null };
+    eventOptions: Option[];
 }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -28,6 +33,20 @@ export default function AuditLogIndex({
                         variant="small"
                         title="Audit log"
                         description="Append-only record of sensitive activity"
+                    />
+
+                    <ListFilters
+                        url={auditLogIndex().url}
+                        search={filters.search}
+                        placeholder="Search event, record type or actor…"
+                        filters={[
+                            {
+                                name: 'event',
+                                label: 'Event',
+                                value: filters.event,
+                                options: eventOptions,
+                            },
+                        ]}
                     />
 
                     <div className="overflow-x-auto rounded-md border">

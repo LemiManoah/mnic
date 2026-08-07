@@ -29,7 +29,11 @@ export default function ListFilters({
 }: {
     /** The index route this list lives on. */
     url: string;
-    search: string | null;
+    /**
+     * Current search term, or omit entirely on lists the backend does not
+     * search — the box is hidden rather than shown doing nothing.
+     */
+    search?: string | null;
     placeholder?: string;
     filters?: SelectFilter[];
 }) {
@@ -90,17 +94,19 @@ export default function ListFilters({
 
     return (
         <div className="flex flex-wrap items-end gap-3">
-            <div className="relative min-w-56 flex-1">
-                <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                    type="search"
-                    value={term}
-                    onChange={(event) => setTerm(event.target.value)}
-                    placeholder={placeholder}
-                    aria-label={placeholder}
-                    className="pl-9"
-                />
-            </div>
+            {search !== undefined && (
+                <div className="relative min-w-56 flex-1">
+                    <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        value={term}
+                        onChange={(event) => setTerm(event.target.value)}
+                        placeholder={placeholder}
+                        aria-label={placeholder}
+                        className="pl-9"
+                    />
+                </div>
+            )}
 
             {filters.map((filter) => (
                 <div key={filter.name} className="grid gap-1">

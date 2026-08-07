@@ -5,6 +5,7 @@ import ReconciliationItemController from '@/actions/App/Http/Controllers/Reconci
 import ReconciliationReviewController from '@/actions/App/Http/Controllers/ReconciliationReviewController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ import type {
     BreadcrumbItem,
     ExternalAccountOption,
     MemberOption,
+    Option,
     Paginated,
     PeriodOption,
     ReconciliationRow,
@@ -309,12 +311,16 @@ export default function ReconciliationIndex({
     periods,
     externalAccounts,
     members,
+    filters,
+    statusOptions,
 }: {
     reconciliations: Paginated<ReconciliationRow>;
     canCreate: boolean;
     periods: PeriodOption[];
     externalAccounts: ExternalAccountOption[];
     members: MemberOption[];
+    filters: { status: string | null };
+    statusOptions: Option[];
 }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -335,6 +341,20 @@ export default function ReconciliationIndex({
                         />
                     )}
                 </div>
+
+                {/* Reconciliations are identified by period and account, not
+                    free text, so status is the only useful filter here. */}
+                <ListFilters
+                    url={reconciliationIndex().url}
+                    filters={[
+                        {
+                            name: 'status',
+                            label: 'Status',
+                            value: filters.status,
+                            options: statusOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

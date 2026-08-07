@@ -10,7 +10,9 @@ use App\Http\Requests\CreateUserForMemberRequest;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,13 +20,24 @@ use Spatie\Permission\Models\Role;
 
 final readonly class UserManagementController
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         Gate::authorize(Permission::UsersManage->value);
+
+        $search = $request->string('search')->trim()->value();
+        $login = $request->string('login')->value();
 
         return Inertia::render('user-management/index', [
             'members' => Member::query()
                 ->with('user')
+                ->when($search !== '', fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $inner): Builder => $inner
+                        ->where('full_name', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('member_number', 'like', sprintf('%%%s%%', $search))
+                        ->orWhereHas('user', fn (Builder $user): Builder => $user
+                            ->where('email', 'like', sprintf('%%%s%%', $search)))))
+                ->when($login === 'with', fn (Builder $query): Builder => $query->whereNotNull('user_id'))
+                ->when($login === 'without', fn (Builder $query): Builder => $query->whereNull('user_id'))
                 ->orderBy('member_number')
                 ->get()
                 ->map(fn (Member $member): array => [
@@ -37,6 +50,14 @@ final readonly class UserManagementController
                     'has_login' => $member->user_id !== null,
                 ]),
             'roles' => Role::query()->orderBy('name')->pluck('name'),
+            'filters' => [
+                'search' => $search === '' ? null : $search,
+                'login' => $login === '' ? null : $login,
+            ],
+            'loginOptions' => [
+                ['value' => 'with', 'label' => 'Has a login'],
+                ['value' => 'without', 'label' => 'No login yet'],
+            ],
         ]);
     }
 

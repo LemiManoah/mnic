@@ -30,7 +30,7 @@ final readonly class PaymentController
         $status = $request->string('status')->value();
 
         $payments = Payment::query()
-            ->with(['member', 'recordedByMember', 'reviewedByMember', 'evidence'])
+            ->with(['member', 'recordedByMember', 'reviewedByMember', 'reversalRequestedByMember', 'evidence'])
             ->when($search !== '', fn (Builder $query): Builder => $query
                 ->where(fn (Builder $inner): Builder => $inner
                     ->where('reference', 'like', sprintf('%%%s%%', $search))
@@ -44,7 +44,7 @@ final readonly class PaymentController
             ->withQueryString()
             ->through(fn (Payment $payment): array => [
                 'id' => $payment->id,
-                'member_name' => $payment->member->full_name,
+                'member_name' => $payment->member->full_name ?? __('Unknown member'),
                 'amount' => $payment->amount,
                 'unapplied_amount' => $payment->unapplied_amount,
                 'paid_on' => $payment->paid_on->toDateString(),
@@ -55,8 +55,10 @@ final readonly class PaymentController
                 'reviewed_by' => $payment->reviewedByMember?->full_name,
                 'rejection_reason' => $payment->rejection_reason,
                 'can_review' => $user->can('review', $payment),
-                'can_reverse' => $user->can('reverse', $payment),
+                'can_request_reversal' => $user->can('requestReversal', $payment),
+                'can_decide_reversal' => $user->can('decideReversal', $payment),
                 'reversal_reason' => $payment->reversal_reason,
+                'reversal_requested_by' => $payment->reversalRequestedByMember?->full_name,
                 'evidence' => $payment->evidence->map(fn (PaymentEvidence $evidence): array => [
                     'id' => $evidence->id,
                     'original_name' => $evidence->original_name,

@@ -29,7 +29,7 @@ final readonly class ConfirmMinutes
                 'confirmed_by_member_id' => $confirmer->id,
             ]);
 
-            $minute->meeting->update(['status' => MeetingStatus::Confirmed]);
+            $minute->meeting()->firstOrFail()->update(['status' => MeetingStatus::Confirmed]);
 
             $this->recordAuditEvent->handle(
                 'minutes.confirmed',

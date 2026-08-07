@@ -31,6 +31,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read string|null $reversed_by_member_id
  * @property-read CarbonInterface|null $reversed_at
  * @property-read string|null $reversal_reason
+ * @property-read string|null $reversal_requested_by_member_id
+ * @property-read CarbonInterface|null $reversal_requested_at
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
  */
@@ -63,6 +65,8 @@ final class Payment extends Model
             'reversed_by_member_id' => 'string',
             'reversed_at' => 'datetime',
             'reversal_reason' => 'string',
+            'reversal_requested_by_member_id' => 'string',
+            'reversal_requested_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -98,6 +102,14 @@ final class Payment extends Model
     public function reversedByMember(): BelongsTo
     {
         return $this->belongsTo(Member::class, 'reversed_by_member_id');
+    }
+
+    /**
+     * @return BelongsTo<Member, $this>
+     */
+    public function reversalRequestedByMember(): BelongsTo
+    {
+        return $this->belongsTo(Member::class, 'reversal_requested_by_member_id');
     }
 
     /**

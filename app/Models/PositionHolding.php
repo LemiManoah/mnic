@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read ClubPosition $position
  * @property-read CarbonInterface $held_from
  * @property-read CarbonInterface|null $held_to
- * @property-read string|null $elected_via_proposal_id
+ * @property-read string|null $elected_via_position_poll_id
  * @property-read string|null $appointed_by_member_id
  * @property-read string|null $transfer_reason
  * @property-read CarbonInterface $created_at
@@ -42,7 +42,7 @@ final class PositionHolding extends Model
             'position' => ClubPosition::class,
             'held_from' => 'date',
             'held_to' => 'date',
-            'elected_via_proposal_id' => 'string',
+            'elected_via_position_poll_id' => 'string',
             'appointed_by_member_id' => 'string',
             'transfer_reason' => 'string',
             'created_at' => 'datetime',
@@ -59,11 +59,11 @@ final class PositionHolding extends Model
     }
 
     /**
-     * @return BelongsTo<Proposal, $this>
+     * @return BelongsTo<PositionPoll, $this>
      */
-    public function electedViaProposal(): BelongsTo
+    public function electedViaPositionPoll(): BelongsTo
     {
-        return $this->belongsTo(Proposal::class, 'elected_via_proposal_id');
+        return $this->belongsTo(PositionPoll::class, 'elected_via_position_poll_id');
     }
 
     /**

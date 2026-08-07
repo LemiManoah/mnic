@@ -7,7 +7,7 @@ namespace App\Actions;
 use App\Enums\ClubPosition;
 use App\Models\Member;
 use App\Models\PositionHolding;
-use App\Models\Proposal;
+use App\Models\PositionPoll;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -23,11 +23,11 @@ final readonly class TransferPosition
         Member $successor,
         string $heldFrom,
         ?Member $actor = null,
-        ?Proposal $proposal = null,
+        ?PositionPoll $poll = null,
         ?string $reason = null,
         ?string $ipAddress = null,
     ): PositionHolding {
-        return DB::transaction(function () use ($position, $successor, $heldFrom, $actor, $proposal, $reason, $ipAddress): PositionHolding {
+        return DB::transaction(function () use ($position, $successor, $heldFrom, $actor, $poll, $reason, $ipAddress): PositionHolding {
             $current = PositionHolding::query()
                 ->where('position', $position->value)
                 ->whereNull('held_to')
@@ -60,7 +60,7 @@ final readonly class TransferPosition
                 'position' => $position,
                 'held_from' => $heldFrom,
                 'held_to' => null,
-                'elected_via_proposal_id' => $proposal?->id,
+                'elected_via_position_poll_id' => $poll?->id,
                 'appointed_by_member_id' => $actor?->id,
                 'transfer_reason' => $reason,
             ]);

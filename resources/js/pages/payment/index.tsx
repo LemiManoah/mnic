@@ -57,6 +57,7 @@ const STATUS_VARIANT: Record<
     submitted: 'outline',
     verified: 'default',
     rejected: 'destructive',
+    reversal_pending: 'outline',
     reversed: 'secondary',
 };
 
@@ -275,28 +276,29 @@ function RejectPaymentDialog({ payment }: { payment: PaymentRow }) {
     );
 }
 
-function ReversePaymentDialog({ payment }: { payment: PaymentRow }) {
+function RequestReversalDialog({ payment }: { payment: PaymentRow }) {
     const [open, setOpen] = useState(false);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
-                    Reverse
+                    Request reversal
                 </Button>
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Reverse payment</DialogTitle>
+                    <DialogTitle>Request a reversal</DialogTitle>
                     <DialogDescription>
-                        Reference {payment.reference} - allocations will be
-                        removed and obligations restored.
+                        Reference {payment.reference} — nothing is unwound yet.
+                        A second officer has to approve this before the
+                        allocations are removed.
                     </DialogDescription>
                 </DialogHeader>
 
                 <Form
-                    {...PaymentReversalController.update.form(payment.id)}
+                    {...PaymentReversalController.store.form(payment.id)}
                     options={{ preserveScroll: true }}
                     onSuccess={() => setOpen(false)}
                     className="space-y-4"
@@ -323,12 +325,8 @@ function ReversePaymentDialog({ payment }: { payment: PaymentRow }) {
                                 >
                                     Cancel
                                 </Button>
-                                <Button
-                                    type="submit"
-                                    variant="destructive"
-                                    disabled={processing}
-                                >
-                                    Reverse payment
+                                <Button type="submit" disabled={processing}>
+                                    Request reversal
                                 </Button>
                             </DialogFooter>
                         </>
@@ -459,13 +457,16 @@ export default function PaymentIndex({
                                         )}
                                         {payment.reversal_reason && (
                                             <span className="block text-xs text-muted-foreground">
-                                                {payment.reversal_reason}
+                                                {payment.reversal_requested_by
+                                                    ? `${payment.reversal_requested_by}: ${payment.reversal_reason}`
+                                                    : payment.reversal_reason}
                                             </span>
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {(payment.can_review ||
-                                            payment.can_reverse) && (
+                                            payment.can_request_reversal ||
+                                            payment.can_decide_reversal) && (
                                             <div className="flex flex-wrap justify-end gap-2">
                                                 {payment.can_review && (
                                                     <>
@@ -498,10 +499,63 @@ export default function PaymentIndex({
                                                     </>
                                                 )}
 
-                                                {payment.can_reverse && (
-                                                    <ReversePaymentDialog
+                                                {payment.can_request_reversal && (
+                                                    <RequestReversalDialog
                                                         payment={payment}
                                                     />
+                                                )}
+
+                                                {payment.can_decide_reversal && (
+                                                    <>
+                                                        <Form
+                                                            {...PaymentReversalController.update.form(
+                                                                payment.id,
+                                                            )}
+                                                            options={{
+                                                                preserveScroll: true,
+                                                            }}
+                                                        >
+                                                            {({
+                                                                processing,
+                                                            }) => (
+                                                                <Button
+                                                                    type="submit"
+                                                                    size="sm"
+                                                                    variant="destructive"
+                                                                    disabled={
+                                                                        processing
+                                                                    }
+                                                                >
+                                                                    Approve
+                                                                    reversal
+                                                                </Button>
+                                                            )}
+                                                        </Form>
+
+                                                        <Form
+                                                            {...PaymentReversalController.destroy.form(
+                                                                payment.id,
+                                                            )}
+                                                            options={{
+                                                                preserveScroll: true,
+                                                            }}
+                                                        >
+                                                            {({
+                                                                processing,
+                                                            }) => (
+                                                                <Button
+                                                                    type="submit"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    disabled={
+                                                                        processing
+                                                                    }
+                                                                >
+                                                                    Decline
+                                                                </Button>
+                                                            )}
+                                                        </Form>
+                                                    </>
                                                 )}
                                             </div>
                                         )}

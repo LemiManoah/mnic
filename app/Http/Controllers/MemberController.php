@@ -89,13 +89,13 @@ final readonly class MemberController
                 ->get()
                 ->sortByDesc(fn (MemberObligation $obligation): string => sprintf(
                     '%04d-%02d',
-                    $obligation->contributionPeriod->year,
-                    $obligation->contributionPeriod->month,
+                    $obligation->contributionPeriod->year ?? 0,
+                    $obligation->contributionPeriod->month ?? 0,
                 ))
                 ->values()
                 ->map(fn (MemberObligation $obligation): array => [
                     'id' => $obligation->id,
-                    'period' => $obligation->contributionPeriod->label(),
+                    'period' => $obligation->contributionPeriod?->label() ?? '',
                     'amount' => $obligation->amount,
                     'amount_paid' => $obligation->amount_paid,
                     'outstanding' => $obligation->outstanding(),

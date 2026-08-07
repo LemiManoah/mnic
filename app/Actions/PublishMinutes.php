@@ -27,7 +27,7 @@ final readonly class PublishMinutes
             // Publishing always adds a version rather than editing in place.
             $minute = Minute::query()->create([
                 'meeting_id' => $meeting->id,
-                'version' => ($latest?->version ?? 0) + 1,
+                'version' => ($latest->version ?? 0) + 1,
                 'body' => $body,
                 'published_by_member_id' => $actor?->id,
             ]);

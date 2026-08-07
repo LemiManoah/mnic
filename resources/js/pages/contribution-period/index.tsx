@@ -3,6 +3,7 @@ import { useState } from 'react';
 import ContributionPeriodController from '@/actions/App/Http/Controllers/ContributionPeriodController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,12 @@ import {
     index as periodIndex,
     show as showPeriod,
 } from '@/routes/contribution-period';
-import type { BreadcrumbItem, ContributionPeriod, Paginated } from '@/types';
+import type {
+    BreadcrumbItem,
+    ContributionPeriod,
+    Option,
+    Paginated,
+} from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -118,9 +124,15 @@ function OpenPeriodDialog() {
 export default function ContributionPeriodIndex({
     periods,
     canOpenPeriod,
+    filters,
+    statusOptions,
+    yearOptions,
 }: {
     periods: Paginated<ContributionPeriod>;
     canOpenPeriod: boolean;
+    filters: { status: string | null; year: string | null };
+    statusOptions: Option[];
+    yearOptions: Option[];
 }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -136,6 +148,25 @@ export default function ContributionPeriodIndex({
 
                     {canOpenPeriod && <OpenPeriodDialog />}
                 </div>
+
+                {/* No free-text search: a period is only ever a month and a year. */}
+                <ListFilters
+                    url={periodIndex().url}
+                    filters={[
+                        {
+                            name: 'status',
+                            label: 'Status',
+                            value: filters.status,
+                            options: statusOptions,
+                        },
+                        {
+                            name: 'year',
+                            label: 'Year',
+                            value: filters.year,
+                            options: yearOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

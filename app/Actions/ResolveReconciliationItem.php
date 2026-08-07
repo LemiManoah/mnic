@@ -18,9 +18,7 @@ final readonly class ResolveReconciliationItem
 
     public function handle(ReconciliationItem $item, ?Member $actor = null, ?string $ipAddress = null): ReconciliationItem
     {
-        $item->loadMissing('reconciliation');
-
-        throw_if($item->reconciliation->isLocked(), InvalidArgumentException::class, 'A locked reconciliation cannot be changed.');
+        throw_if($item->reconciliation()->firstOrFail()->isLocked(), InvalidArgumentException::class, 'A locked reconciliation cannot be changed.');
 
         return DB::transaction(function () use ($item, $actor, $ipAddress): ReconciliationItem {
             $before = $item->toArray();

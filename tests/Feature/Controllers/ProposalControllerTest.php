@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\ClubRole;
-use App\Enums\ClubPosition;
 use App\Enums\ProposalStatus;
 use App\Enums\VoteChoice;
 use App\Models\Member;
@@ -37,25 +36,6 @@ it('allows the chairperson to create a draft proposal', function (): void {
 
     expect($proposal?->status)->toBe(ProposalStatus::Draft)
         ->and($proposal?->created_by_member_id)->toBe($actor->id);
-});
-
-it('allows a chairperson to create an election proposal', function (): void {
-    $actor = memberWithRole(ClubRole::InterimChairperson);
-    $candidate = Member::factory()->create();
-
-    $response = $this->actingAs($actor->user)->post(route('proposal.store'), [
-        'title' => 'Elect the Treasurer',
-        'description' => 'Nominate a new Treasurer.',
-        'election_position' => ClubPosition::Treasurer->value,
-        'election_member_id' => $candidate->id,
-    ]);
-
-    $proposal = Proposal::query()->where('title', 'Elect the Treasurer')->first();
-
-    $response->assertRedirectToRoute('proposal.show', $proposal);
-
-    expect($proposal?->election_position)->toBe(ClubPosition::Treasurer)
-        ->and($proposal?->election_member_id)->toBe($candidate->id);
 });
 
 it('denies a plain member from creating a proposal', function (): void {

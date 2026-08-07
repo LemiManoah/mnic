@@ -13,21 +13,34 @@ use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final readonly class ReversePayment
+/**
+ * The second half of a payment reversal: unwind the allocations and mark the
+ * payment reversed. Requesting the reversal is RequestPaymentReversal.
+ */
+final readonly class ApprovePaymentReversal
 {
     public function __construct(private RecordAuditEvent $recordAuditEvent)
     {
         //
     }
 
-    public function handle(Payment $payment, Member $reverser, string $reason, ?string $ipAddress = null): Payment
+    public function handle(Payment $payment, Member $approver, ?string $ipAddress = null): Payment
     {
-        return DB::transaction(function () use ($payment, $reverser, $reason, $ipAddress): Payment {
+        return DB::transaction(function () use ($payment, $approver, $ipAddress): Payment {
             $payment = Payment::query()
                 ->lockForUpdate()
                 ->findOrFail($payment->id);
 
-            throw_if($payment->status !== PaymentStatus::Verified, InvalidArgumentException::class, 'Only a verified payment can be reversed.');
+            throw_if($payment->status !== PaymentStatus::ReversalPending, InvalidArgumentException::class, 'There is no reversal pending on this payment.');
+
+            // Separation of duties: whoever asked for the reversal cannot be the
+            // one who approves it. Mirrored in PaymentPolicy::decideReversal so
+            // neither route nor administrator bypass can defeat it.
+            throw_if(
+                $payment->reversal_requested_by_member_id === $approver->id,
+                InvalidArgumentException::class,
+                'The member who requested the reversal cannot approve it.',
+            );
 
             $before = $payment->toArray();
 
@@ -41,7 +54,7 @@ final readonly class ReversePayment
                 $obligation->loadMissing('contributionPeriod');
 
                 throw_if(
-                    $obligation->contributionPeriod->status === ContributionPeriodStatus::Closed,
+                    $obligation->contributionPeriod?->status === ContributionPeriodStatus::Closed,
                     InvalidArgumentException::class,
                     'A payment allocated to a closed contribution period cannot be reversed directly.',
                 );
@@ -63,15 +76,14 @@ final readonly class ReversePayment
             $payment->update([
                 'status' => PaymentStatus::Reversed,
                 'unapplied_amount' => 0,
-                'reversed_by_member_id' => $reverser->id,
+                'reversed_by_member_id' => $approver->id,
                 'reversed_at' => now(),
-                'reversal_reason' => $reason,
             ]);
 
             $this->recordAuditEvent->handle(
                 'payment.reversed',
                 $payment,
-                $reverser,
+                $approver,
                 $before,
                 $payment->toArray(),
                 $ipAddress,

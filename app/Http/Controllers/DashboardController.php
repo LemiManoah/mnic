@@ -70,7 +70,7 @@ final readonly class DashboardController
                 'net_position' => $cashPosition->netPosition(),
                 'verified_inflows' => $cashPosition->verifiedInflows(),
                 'settled_outflows' => $cashPosition->settledOutflows(),
-                'reconciled_to' => $latestConfirmed?->contributionPeriod->label(),
+                'reconciled_to' => $latestConfirmed?->contributionPeriod?->label(),
             ],
             'currentPeriod' => $latestPeriod === null ? null : [
                 'label' => $latestPeriod->label(),

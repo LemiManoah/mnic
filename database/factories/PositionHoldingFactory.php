@@ -24,7 +24,7 @@ final class PositionHoldingFactory extends Factory
             'position' => ClubPosition::Chairperson,
             'held_from' => now()->toDateString(),
             'held_to' => null,
-            'elected_via_proposal_id' => null,
+            'elected_via_position_poll_id' => null,
             'appointed_by_member_id' => null,
             'transfer_reason' => fake()->sentence(),
         ];

@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\ScheduleMeeting;
 use App\Enums\AttendanceStatus;
+use App\Enums\MeetingStatus;
 use App\Enums\MemberStatus;
 use App\Http\Requests\ScheduleMeetingRequest;
 use App\Models\ActionItem;
@@ -18,15 +19,19 @@ use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final readonly class MeetingController
 {
-    public function index(#[CurrentUser] User $user): Response
+    public function index(Request $request, #[CurrentUser] User $user): Response
     {
         Gate::authorize('viewAny', Meeting::class);
+
+        $search = $request->string('search')->trim()->value();
+        $status = $request->string('status')->value();
 
         return Inertia::render('meeting/index', [
             'meetings' => Meeting::query()
@@ -34,8 +39,27 @@ final readonly class MeetingController
                     'attendances as present_count' => fn (Builder $query): Builder => $query
                         ->where('status', AttendanceStatus::Present->value),
                 ])
+                ->when($search !== '', fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $inner): Builder => $inner
+                        ->where('title', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('reference', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('location', 'like', sprintf('%%%s%%', $search))))
+                ->when($status !== '', fn (Builder $query): Builder => $query
+                    ->where('status', $status))
                 ->orderByDesc('scheduled_for')
-                ->paginate(15),
+                ->paginate(15)
+                ->withQueryString(),
+            'filters' => [
+                'search' => $search === '' ? null : $search,
+                'status' => $status === '' ? null : $status,
+            ],
+            'statusOptions' => array_map(
+                static fn (MeetingStatus $case): array => [
+                    'value' => $case->value,
+                    'label' => $case->label(),
+                ],
+                MeetingStatus::cases(),
+            ),
             'canSchedule' => $user->can('create', Meeting::class),
         ]);
     }
@@ -57,7 +81,7 @@ final readonly class MeetingController
                 ->get(['id', 'full_name', 'member_number']),
             'attendance' => $meeting->attendances->map(fn (MeetingAttendance $record): array => [
                 'member_id' => $record->member_id,
-                'member_name' => $record->member->full_name,
+                'member_name' => $record->member->full_name ?? __('Unknown member'),
                 'status' => $record->status,
             ]),
             'minutes' => $latest instanceof Minute ? [

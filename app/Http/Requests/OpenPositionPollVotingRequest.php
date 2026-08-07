@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Models\Payment;
+use App\Models\PositionPoll;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-final class ReversePaymentRequest extends FormRequest
+final class OpenPositionPollVotingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $payment = $this->route('payment');
-        assert($payment instanceof Payment);
+        $poll = $this->route('poll');
 
-        return (bool) $this->user()?->can('reverse', $payment);
+        return $poll instanceof PositionPoll
+            && (bool) $this->user()?->can('openVoting', $poll);
     }
 
     /**
@@ -24,7 +24,7 @@ final class ReversePaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['required', 'string', 'max:2000'],
+            'closes_at' => ['required', 'date', 'after:now'],
         ];
     }
 }

@@ -8,6 +8,7 @@ use App\Enums\Permission;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -30,7 +31,7 @@ final class CreateUserForMemberRequest extends FormRequest
                 Rule::exists(Member::class, 'id'),
                 // One login per member.
                 Rule::unique(Member::class, 'id')->where(
-                    fn ($query) => $query->whereNotNull('user_id'),
+                    fn (Builder $query): Builder => $query->whereNotNull('user_id'),
                 ),
             ],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)],

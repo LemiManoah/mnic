@@ -41,17 +41,17 @@ final readonly class PositionController
                 ClubPosition::cases(),
             ),
             'history' => PositionHolding::query()
-                ->with(['member', 'electedViaProposal'])
+                ->with(['member', 'electedViaPositionPoll'])
                 ->latest('held_from')
                 ->latest()
                 ->get()
                 ->map(fn (PositionHolding $holding): array => [
                     'id' => $holding->id,
                     'position' => $holding->position->label(),
-                    'member_name' => $holding->member->full_name,
+                    'member_name' => $holding->member->full_name ?? __('Unknown member'),
                     'held_from' => $holding->held_from->toDateString(),
                     'held_to' => $holding->held_to?->toDateString(),
-                    'source' => $holding->electedViaProposal?->title ?? $holding->transfer_reason,
+                    'source' => $holding->electedViaPositionPoll->title ?? $holding->transfer_reason,
                 ]),
             'members' => Member::query()
                 ->where('status', MemberStatus::Active->value)
@@ -79,7 +79,7 @@ final readonly class PositionController
         $action->handle(
             ClubPosition::from($request->string('position')->value()),
             $successor,
-            $request->date('held_from')->toDateString(),
+            $request->string('held_from')->value(),
             $actor,
             null,
             $request->string('reason')->value(),

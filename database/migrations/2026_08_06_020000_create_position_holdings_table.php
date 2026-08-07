@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('position');
             $table->date('held_from');
             $table->date('held_to')->nullable();
-            $table->foreignUuid('elected_via_proposal_id')->nullable()->constrained('proposals')->nullOnDelete();
+            $table->foreignUuid('elected_via_position_poll_id')->nullable()->constrained('position_polls')->nullOnDelete();
             $table->foreignUuid('appointed_by_member_id')->nullable()->constrained('members')->nullOnDelete();
             $table->text('transfer_reason')->nullable();
             $table->timestamps();
@@ -31,8 +31,7 @@ return new class extends Migration
         });
 
         DB::table('members')
-            ->whereNotNull('position')
-            ->orderBy('created_at')
+            ->whereNotNull('position')->oldest()
             ->get(['id', 'position', 'joined_at', 'created_at', 'updated_at'])
             ->each(function (object $member): void {
                 DB::table('position_holdings')->insert([
@@ -41,7 +40,7 @@ return new class extends Migration
                     'position' => $member->position,
                     'held_from' => $member->joined_at ?? now()->toDateString(),
                     'held_to' => null,
-                    'elected_via_proposal_id' => null,
+                    'elected_via_position_poll_id' => null,
                     'appointed_by_member_id' => null,
                     'transfer_reason' => 'Migrated from member profile position.',
                     'created_at' => $member->created_at ?? now(),

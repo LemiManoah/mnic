@@ -13,10 +13,7 @@ use InvalidArgumentException;
 
 final readonly class CloseProposalVoting
 {
-    public function __construct(
-        private RecordAuditEvent $recordAuditEvent,
-        private TransferPosition $transferPosition,
-    )
+    public function __construct(private RecordAuditEvent $recordAuditEvent)
     {
         //
     }
@@ -58,20 +55,6 @@ final readonly class CloseProposalVoting
                     $proposal->approval_percent,
                 ),
             ]);
-
-            if ($passed && $proposal->isElection()) {
-                $proposal->loadMissing('electionMember');
-
-                $this->transferPosition->handle(
-                    $proposal->election_position,
-                    $proposal->electionMember,
-                    now()->toDateString(),
-                    $actor,
-                    $proposal,
-                    sprintf('Passed proposal: %s', $proposal->title),
-                    $ipAddress,
-                );
-            }
 
             $this->recordAuditEvent->handle(
                 'proposal.voting_closed',

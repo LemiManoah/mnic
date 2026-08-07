@@ -6,8 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\ProposalStatus;
 use App\Enums\VoteChoice;
-use App\Enums\ClubPosition;
-use App\Enums\MemberStatus;
 use App\Http\Requests\CreateProposalRequest;
 use App\Models\Meeting;
 use App\Models\Member;
@@ -15,37 +13,49 @@ use App\Models\Proposal;
 use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final readonly class ProposalController
 {
-    public function index(#[CurrentUser] User $user): Response
+    public function index(Request $request, #[CurrentUser] User $user): Response
     {
         Gate::authorize('viewAny', Proposal::class);
+
+        $search = $request->string('search')->trim()->value();
+        $status = $request->string('status')->value();
 
         return Inertia::render('proposal/index', [
             'proposals' => Proposal::query()
                 ->withCount('votes')
+                ->when($search !== '', fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $inner): Builder => $inner
+                        ->where('title', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('description', 'like', sprintf('%%%s%%', $search))))
+                ->when($status !== '', fn (Builder $query): Builder => $query
+                    ->where('status', $status))
                 ->latest()
-                ->paginate(15),
+                ->paginate(15)
+                ->withQueryString(),
+            'filters' => [
+                'search' => $search === '' ? null : $search,
+                'status' => $status === '' ? null : $status,
+            ],
+            'statusOptions' => array_map(
+                static fn (ProposalStatus $case): array => [
+                    'value' => $case->value,
+                    'label' => $case->label(),
+                ],
+                ProposalStatus::cases(),
+            ),
             'canCreate' => $user->can('create', Proposal::class),
             'meetings' => Meeting::query()
                 ->orderByDesc('scheduled_for')
                 ->get(['id', 'reference', 'title']),
-            'members' => Member::query()
-                ->where('status', MemberStatus::Active->value)
-                ->orderBy('full_name')
-                ->get(['id', 'full_name', 'member_number']),
-            'positionOptions' => array_map(
-                static fn (ClubPosition $position): array => [
-                    'value' => $position->value,
-                    'label' => $position->label(),
-                ],
-                ClubPosition::cases(),
-            ),
         ]);
     }
 
@@ -53,14 +63,10 @@ final readonly class ProposalController
     {
         Gate::authorize('view', $proposal);
 
-        $proposal->loadMissing(['votes.member', 'meeting', 'electionMember']);
+        $proposal->loadMissing(['votes.member', 'meeting']);
 
         return Inertia::render('proposal/show', [
             'proposal' => $proposal,
-            'election' => $proposal->isElection() ? [
-                'position' => $proposal->election_position?->label(),
-                'member_name' => $proposal->electionMember?->full_name ?? __('Unknown member'),
-            ] : null,
             'canManageVoting' => $user->can('manageVoting', $proposal),
             'canVote' => $user->can('vote', $proposal),
             'tally' => [
@@ -74,7 +80,7 @@ final readonly class ProposalController
                 ? []
                 : $proposal->votes->map(fn (Vote $vote): array => [
                     'id' => $vote->id,
-                    'member_name' => $vote->member->full_name,
+                    'member_name' => $vote->member->full_name ?? __('Unknown member'),
                     'choice' => $vote->choice,
                     'has_conflict' => $vote->has_conflict,
                     'conflict_note' => $vote->conflict_note,

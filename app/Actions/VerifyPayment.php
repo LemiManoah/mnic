@@ -44,8 +44,8 @@ final readonly class VerifyPayment
                 // they run ahead into future obligations.
                 ->sortBy(fn (MemberObligation $obligation): string => sprintf(
                     '%04d-%02d',
-                    $obligation->contributionPeriod->year,
-                    $obligation->contributionPeriod->month,
+                    $obligation->contributionPeriod->year ?? 0,
+                    $obligation->contributionPeriod->month ?? 0,
                 ));
 
             foreach ($obligations as $obligation) {

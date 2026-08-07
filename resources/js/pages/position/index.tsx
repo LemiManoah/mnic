@@ -57,8 +57,13 @@ export default function PositionIndex({
             <Head title="Positions" />
 
             <AdminLayout>
-                <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-                    <div className="space-y-6">
+                {/*
+                 * Both tracks need min-w-0: a grid item defaults to min-width
+                 * auto, so the long "MEM-001 - Firstname Lastname" options size
+                 * the select past its column and push the card off screen.
+                 */}
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                    <div className="min-w-0 space-y-6">
                         <Heading
                             variant="small"
                             title="Positions"
@@ -144,7 +149,7 @@ export default function PositionIndex({
                     </div>
 
                     {canTransfer && (
-                        <Card>
+                        <Card className="min-w-0">
                             <CardHeader>
                                 <CardTitle>Transfer office</CardTitle>
                             </CardHeader>
@@ -164,7 +169,7 @@ export default function PositionIndex({
                                                     name="position"
                                                     required
                                                     defaultValue=""
-                                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                                                    className="flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
                                                 >
                                                     <option value="" disabled>
                                                         Select office
@@ -198,7 +203,7 @@ export default function PositionIndex({
                                                     name="member_id"
                                                     required
                                                     defaultValue=""
-                                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                                                    className="flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
                                                 >
                                                     <option value="" disabled>
                                                         Select member

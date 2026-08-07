@@ -36,6 +36,8 @@ final class PaymentFactory extends Factory
             'reversed_by_member_id' => null,
             'reversed_at' => null,
             'reversal_reason' => null,
+            'reversal_requested_by_member_id' => null,
+            'reversal_requested_at' => null,
         ];
     }
 
@@ -53,6 +55,20 @@ final class PaymentFactory extends Factory
             'status' => PaymentStatus::Rejected,
             'reviewed_at' => now(),
             'rejection_reason' => fake()->sentence(),
+        ]);
+    }
+
+    /**
+     * Verified, with a reversal asked for but not yet decided.
+     */
+    public function reversalPending(): self
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => PaymentStatus::ReversalPending,
+            'reviewed_at' => now(),
+            'reversal_requested_by_member_id' => Member::factory(),
+            'reversal_requested_at' => now(),
+            'reversal_reason' => fake()->sentence(),
         ]);
     }
 

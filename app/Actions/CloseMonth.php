@@ -36,8 +36,7 @@ final readonly class CloseMonth
                 'locked_at' => now(),
             ]);
 
-            $reconciliation->loadMissing('contributionPeriod');
-            $reconciliation->contributionPeriod->update([
+            $reconciliation->contributionPeriod()->firstOrFail()->update([
                 'status' => ContributionPeriodStatus::Closed,
             ]);
 

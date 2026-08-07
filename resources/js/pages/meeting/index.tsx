@@ -3,6 +3,7 @@ import { useState } from 'react';
 import MeetingController from '@/actions/App/Http/Controllers/MeetingController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import type {
     BreadcrumbItem,
     Meeting,
     MeetingStatus,
+    Option,
     Paginated,
 } from '@/types';
 
@@ -144,9 +146,13 @@ function ScheduleMeetingDialog() {
 export default function MeetingIndex({
     meetings,
     canSchedule,
+    filters,
+    statusOptions,
 }: {
     meetings: Paginated<Meeting>;
     canSchedule: boolean;
+    filters: { search: string | null; status: string | null };
+    statusOptions: Option[];
 }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -162,6 +168,20 @@ export default function MeetingIndex({
 
                     {canSchedule && <ScheduleMeetingDialog />}
                 </div>
+
+                <ListFilters
+                    url={meetingIndex().url}
+                    search={filters.search}
+                    placeholder="Search title, reference or location…"
+                    filters={[
+                        {
+                            name: 'status',
+                            label: 'Status',
+                            value: filters.status,
+                            options: statusOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

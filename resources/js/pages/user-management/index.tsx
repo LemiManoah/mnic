@@ -3,6 +3,7 @@ import { useState } from 'react';
 import UserManagementController from '@/actions/App/Http/Controllers/UserManagementController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ListFilters from '@/components/list-filters';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +28,7 @@ import {
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { index as userManagementIndex } from '@/routes/user-management';
-import type { BreadcrumbItem, MemberStatus } from '@/types';
+import type { BreadcrumbItem, MemberStatus, Option } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Login accounts', href: userManagementIndex() },
@@ -156,9 +157,13 @@ function CreateLoginDialog({
 export default function UserManagementIndex({
     members,
     roles,
+    filters,
+    loginOptions,
 }: {
     members: MemberAccount[];
     roles: string[];
+    filters: { search: string | null; login: string | null };
+    loginOptions: Option[];
 }) {
     const withoutLogin = members.filter((member) => !member.has_login).length;
 
@@ -180,6 +185,20 @@ export default function UserManagementIndex({
 
                     <CreateLoginDialog members={members} roles={roles} />
                 </div>
+
+                <ListFilters
+                    url={userManagementIndex().url}
+                    search={filters.search}
+                    placeholder="Search name, member number or email…"
+                    filters={[
+                        {
+                            name: 'login',
+                            label: 'Login',
+                            value: filters.login,
+                            options: loginOptions,
+                        },
+                    ]}
+                />
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>

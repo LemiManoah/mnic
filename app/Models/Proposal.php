@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ProposalStatus;
-use App\Enums\ClubPosition;
 use App\Enums\VoteChoice;
 use Carbon\CarbonInterface;
 use Database\Factories\ProposalFactory;
@@ -20,8 +19,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read string|null $meeting_id
  * @property-read string $title
  * @property-read string $description
- * @property-read ClubPosition|null $election_position
- * @property-read string|null $election_member_id
  * @property-read ProposalStatus $status
  * @property-read CarbonInterface|null $opened_at
  * @property-read CarbonInterface|null $closes_at
@@ -51,8 +48,6 @@ final class Proposal extends Model
             'meeting_id' => 'string',
             'title' => 'string',
             'description' => 'string',
-            'election_position' => ClubPosition::class,
-            'election_member_id' => 'string',
             'status' => ProposalStatus::class,
             'opened_at' => 'datetime',
             'closes_at' => 'datetime',
@@ -97,19 +92,6 @@ final class Proposal extends Model
     public function createdByMember(): BelongsTo
     {
         return $this->belongsTo(Member::class, 'created_by_member_id');
-    }
-
-    /**
-     * @return BelongsTo<Member, $this>
-     */
-    public function electionMember(): BelongsTo
-    {
-        return $this->belongsTo(Member::class, 'election_member_id');
-    }
-
-    public function isElection(): bool
-    {
-        return $this->election_position !== null && $this->election_member_id !== null;
     }
 
     public function countChoice(VoteChoice $choice): int

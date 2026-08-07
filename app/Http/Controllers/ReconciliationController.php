@@ -13,25 +13,32 @@ use App\Models\Reconciliation;
 use App\Models\ReconciliationItem;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final readonly class ReconciliationController
 {
-    public function index(#[CurrentUser] User $user): Response
+    public function index(Request $request, #[CurrentUser] User $user): Response
     {
         Gate::authorize('viewAny', Reconciliation::class);
+
+        $status = $request->string('status')->value();
 
         return Inertia::render('reconciliation/index', [
             'reconciliations' => Reconciliation::query()
                 ->with(['contributionPeriod', 'externalAccount', 'items', 'preparedByMember'])
+                ->when($status !== '', fn (Builder $query): Builder => $query
+                    ->where('status', $status))
                 ->latest()
                 ->paginate(15)
+                ->withQueryString()
                 ->through(fn (Reconciliation $reconciliation): array => [
                     'id' => $reconciliation->id,
-                    'period' => $reconciliation->contributionPeriod->label(),
+                    'period' => $reconciliation->contributionPeriod?->label() ?? '',
                     'account' => $reconciliation->externalAccount?->name,
                     'opening_balance' => $reconciliation->opening_balance,
                     'statement_closing_balance' => $reconciliation->statement_closing_balance,
@@ -52,6 +59,16 @@ final readonly class ReconciliationController
                     'can_confirm' => $user->can('confirm', $reconciliation),
                     'can_lock' => $user->can('lock', $reconciliation),
                 ]),
+            'filters' => [
+                'status' => $status === '' ? null : $status,
+            ],
+            'statusOptions' => array_map(
+                static fn (ReconciliationStatus $case): array => [
+                    'value' => $case->value,
+                    'label' => $case->label(),
+                ],
+                ReconciliationStatus::cases(),
+            ),
             'canCreate' => $user->can('create', Reconciliation::class),
             'periods' => ContributionPeriod::query()
                 ->orderByDesc('year')

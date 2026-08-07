@@ -103,7 +103,7 @@ final readonly class MonthlyReportController
                 ->get()
                 ->map(fn (Payment $payment): array => [
                     'id' => $payment->id,
-                    'member_name' => $payment->member->full_name,
+                    'member_name' => $payment->member->full_name ?? __('Unknown member'),
                     'reference' => $payment->reference,
                     'amount' => $payment->amount,
                     'paid_on' => $payment->paid_on->toDateString(),

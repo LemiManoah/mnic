@@ -33,14 +33,12 @@ export default function ProposalShow({
     canVote,
     tally,
     votes,
-    election,
 }: {
     proposal: Proposal;
     canManageVoting: boolean;
     canVote: boolean;
     tally: VoteTally;
     votes: VoteRow[];
-    election: { position: string; member_name: string } | null;
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Proposals', href: proposalIndex() },
@@ -72,12 +70,6 @@ export default function ProposalShow({
                         <CardTitle>Proposal</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
-                        {election && (
-                            <div className="rounded-md border px-3 py-2">
-                                Election: {election.member_name} for{' '}
-                                {election.position}
-                            </div>
-                        )}
                         <div className="whitespace-pre-wrap">
                             {proposal.description}
                         </div>
