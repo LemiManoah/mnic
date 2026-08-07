@@ -35,7 +35,7 @@ return new class extends Migration
             $table->text('rejection_reason')->nullable();
             $table->timestamps();
 
-            $table->unique(['contribution_period_id', 'external_account_id']);
+            $table->unique(['contribution_period_id', 'external_account_id'], 'reconciliations_period_account_unique');
         });
     }
 
