@@ -2,232 +2,201 @@
 
 declare(strict_types=1);
 
-use App\Enums\ActionItemStatus;
 use App\Enums\ClubPosition;
 use App\Enums\ClubRole;
 use App\Enums\ContributionPeriodStatus;
-use App\Enums\ExpenseStatus;
 use App\Enums\MemberStatus;
+use App\Enums\ObligationStatus;
 use App\Enums\PaymentStatus;
-use App\Enums\PositionPollStatus;
-use App\Enums\ProposalStatus;
 use App\Models\ActionItem;
 use App\Models\ContributionPeriod;
 use App\Models\Expense;
+use App\Models\ExternalAccount;
 use App\Models\Meeting;
 use App\Models\Member;
+use App\Models\MemberObligation;
 use App\Models\MembershipStatusHistory;
 use App\Models\Payment;
+use App\Models\PaymentAllocation;
 use App\Models\PositionHolding;
 use App\Models\PositionPoll;
-use App\Models\PositionPollCandidate;
 use App\Models\Proposal;
 use App\Models\User;
-use App\Models\Vote;
-use Carbon\CarbonImmutable;
+use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\MusuwaNationSeeder;
-use Database\Seeders\RolePermissionSeeder;
-use Database\Seeders\SettingSeeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 
 beforeEach(function (): void {
-    (new RolePermissionSeeder)->run();
-    (new SettingSeeder)->run();
-    (new MusuwaNationSeeder)->run();
+    $this->seed(DatabaseSeeder::class);
 });
 
-it('seeds the full active roll of twenty', function (): void {
-    expect(Member::query()->count())->toBe(20)
-        ->and(Member::query()->where('status', MemberStatus::Active->value)->count())->toBe(20);
-});
-
-it('places the named leadership in the right offices', function (): void {
+it('seeds the supplied twenty members with their real login addresses', function (): void {
     $expected = [
-        'Fredrick Ssekweyama' => ClubPosition::Chairperson,
-        'Conrad Tumwijukye' => ClubPosition::ViceChairperson,
-        'Shaun Ariko' => ClubPosition::GeneralSecretary,
-        'Michael Nuwagaba' => ClubPosition::AssistantGeneralSecretary,
+        'Feta Jeff Owen' => 'fetaowen@gmail.com',
+        'Namara Honest' => 'honestnamara42@gmail.com',
+        'Tumwine John Esau' => 'johnesaut@gmail.com',
+        'Odongkara Fred Ojok' => 'fredodongkara18@gmail.com',
+        'Turyakira Trevor' => 'trevorturyakira78@gmail.com',
+        'Rwothomio Paul' => 'rwothomiopaul0@gmail.com',
+        'Ssekweyama Fredrick' => 'mubuukefredrick24@gmail.com',
+        'Tumwijukye Conrad' => 'tumwijukyeconrad99@gmail.com',
+        'Ariko Shaun Opio' => 'shaunopio44@gmail.com',
+        'Nyero John' => 'johnnyero02@gmail.com',
+        'Ishimwe Mark' => 'markishimwe7@gmail.com',
+        'Luate Simon Jackson' => 'jacksonsimeon17@gmail.com',
+        'Gimei Jude Tadeo' => 'gimeijude75@gmail.com',
+        'Lubega James Benjamin' => 'jamesbenjaminmarvin@gmail.com',
+        'Ndagije Ronald' => 'ndagijeronnie@gmail.com',
+        'Ssegawa Kibombo' => 'ismailseis156@gmail.com',
+        'Nuwagaba Michael Kanyima' => 'kmnuwagaba@gmail.com',
+        'Musiimenta Alfred Marvin' => 'alfredomarvinez@gmail.com',
+        'Kiwanuka Joseph' => 'josephkiwanuka871@gmail.com',
+        'Lemi Manoah' => 'lemi.manoah@gmail.com',
+    ];
+
+    expect(User::query()->pluck('email', 'name')->all())->toEqual($expected)
+        ->and(Member::query()->count())->toBe(20)
+        ->and(MembershipStatusHistory::query()->count())->toBe(20);
+
+    foreach (Member::query()->with('user')->get() as $member) {
+        expect($member->status)->toBe(MemberStatus::Active)
+            ->and($member->phone)->toBe('')
+            ->and($member->joined_at->toDateString())->toBe('2026-08-01')
+            ->and($member->user?->name)->toBe($member->full_name)
+            ->and($member->user?->email_verified_at)->toBeNull()
+            ->and(Hash::check('password', (string) $member->user?->password))->toBeTrue();
+    }
+});
+
+it('retains the existing officer assignments and member numbers', function (): void {
+    $expected = [
+        'Ssekweyama Fredrick' => ClubPosition::Chairperson,
+        'Tumwijukye Conrad' => ClubPosition::ViceChairperson,
+        'Ariko Shaun Opio' => ClubPosition::GeneralSecretary,
+        'Nuwagaba Michael Kanyima' => ClubPosition::AssistantGeneralSecretary,
         'Lemi Manoah' => ClubPosition::Treasurer,
-        'James Benjamin Lubega' => ClubPosition::AssistantTreasurer,
+        'Lubega James Benjamin' => ClubPosition::AssistantTreasurer,
         'Feta Jeff Owen' => ClubPosition::Mobilizer,
-        'John Esau Tumwine' => ClubPosition::AssistantMobilizer,
-        'Alfred Musimenta' => ClubPosition::ChiefWhip,
-        'Mark Ishimwe' => ClubPosition::AssistantChiefWhip,
+        'Tumwine John Esau' => ClubPosition::AssistantMobilizer,
+        'Musiimenta Alfred Marvin' => ClubPosition::ChiefWhip,
+        'Ishimwe Mark' => ClubPosition::AssistantChiefWhip,
     ];
 
     foreach ($expected as $name => $position) {
-        expect(Member::query()->where('full_name', $name)->first()?->position)
-            ->toBe($position, sprintf('%s should hold %s', $name, $position->value));
+        expect(Member::query()->where('full_name', $name)->firstOrFail()->currentPosition())->toBe($position);
+    }
+
+    expect(Member::query()->where('full_name', 'Lemi Manoah')->firstOrFail()->member_number)->toBe('MN-0003')
+        ->and(User::query()->where('email', 'lemi.manoah@gmail.com')->firstOrFail()->hasRole(ClubRole::Administrator))->toBeTrue()
+        ->and(PositionHolding::query()->count())->toBe(10);
+});
+
+it('opens only August September and October 2026 with twenty obligations each', function (): void {
+    expect(ContributionPeriod::query()->orderBy('month')->pluck('month')->all())->toBe([8, 9, 10])
+        ->and(MemberObligation::query()->count())->toBe(60);
+
+    foreach (ContributionPeriod::query()->get() as $period) {
+        expect($period->year)->toBe(2026)
+            ->and($period->status)->toBe(ContributionPeriodStatus::Open)
+            ->and($period->amount)->toBe(60000)
+            ->and(MemberObligation::query()->where('contribution_period_id', $period->id)->sum('amount'))->toBe(1200000);
     }
 });
 
-it('seeds every elected office exactly once', function (): void {
-    foreach (ClubPosition::cases() as $position) {
-        expect(Member::query()->where('position', $position->value)->count())
-            ->toBe(1, 'Expected exactly one '.$position->value)
-            ->and(PositionHolding::query()->where('position', $position->value)->whereNull('held_to')->count())
-            ->toBe(1, 'Expected exactly one current holding for '.$position->value);
-    }
-});
-
-it('keeps the requested login for the treasurer', function (): void {
-    $user = User::query()->where('email', 'lemi@gmail.com')->first();
-
-    expect($user)->not->toBeNull()
-        ->and(Hash::check('password', (string) $user?->password))->toBeTrue()
-        ->and($user?->hasRole(ClubRole::Administrator->value))->toBeTrue();
-});
-
-it('uses gmail logins and the shared demo password for seeded members', function (): void {
-    $users = User::query()->orderBy('name')->get();
-
-    expect($users)->toHaveCount(20);
-
-    foreach ($users as $user) {
-        expect(str_ends_with((string) $user->email, '@gmail.com'))->toBeTrue()
-            ->and(Hash::check('password', (string) $user->password))->toBeTrue();
+it('does not fabricate financial or governance history or send import notifications', function (): void {
+    foreach ([Expense::class, ExternalAccount::class, Meeting::class, Proposal::class, ActionItem::class, PositionPoll::class] as $model) {
+        expect($model::query()->count())->toBe(0);
     }
 
-    expect(User::query()->where('name', 'Fredrick Ssekweyama')->first()?->email)->toBe('ssekweyama@gmail.com')
-        ->and(User::query()->where('name', 'John Esau Tumwine')->first()?->email)->toBe('tumwine@gmail.com');
+    Notification::assertNothingSent();
 });
 
-it('updates old placeholder login emails when the demo seeder is rerun', function (): void {
-    User::query()
-        ->where('name', 'Fredrick Ssekweyama')
-        ->firstOrFail()
-        ->forceFill(['email' => 'fredrick.ssekweyama.01@musuwanation.test'])
-        ->save();
+it('updates legacy identities without changing member ownership or passwords', function (): void {
+    $member = Member::query()->where('member_number', 'MN-0001')->firstOrFail();
+    $user = $member->user;
+    $user->forceFill(['name' => 'Fredrick Ssekweyama', 'email' => 'ssekweyama@gmail.com', 'password' => 'my-changed-password'])->save();
+    $member->update(['full_name' => 'Fredrick Ssekweyama']);
 
-    (new MusuwaNationSeeder)->run();
+    $this->seed(MusuwaNationSeeder::class);
 
-    expect(User::query()->where('name', 'Fredrick Ssekweyama')->first()?->email)->toBe('ssekweyama@gmail.com')
-        ->and(User::query()->where('email', 'fredrick.ssekweyama.01@musuwanation.test')->exists())->toBeFalse()
+    expect($member->fresh()->user_id)->toBe($user->id)
+        ->and($user->fresh()->email)->toBe('mubuukefredrick24@gmail.com')
+        ->and(Hash::check('my-changed-password', $user->fresh()->password))->toBeTrue()
         ->and(User::query()->count())->toBe(20);
 });
 
-it('separates recording from verifying so maker-checker works out of the box', function (): void {
-    $treasurer = Member::query()->where('position', ClubPosition::AssistantTreasurer->value)->first();
-    $whip = Member::query()->where('position', ClubPosition::ChiefWhip->value)->first();
+it('is idempotent and preserves later membership and contribution changes', function (): void {
+    $member = Member::query()->where('member_number', 'MN-0003')->firstOrFail();
+    $member->update(['phone' => '+256771234567', 'position' => null]);
+    $obligation = MemberObligation::query()->whereHas('contributionPeriod', fn ($query) => $query->where('month', 9))->firstOrFail();
+    $obligation->update(['amount_paid' => 15000]);
 
-    expect($treasurer?->user?->hasRole(ClubRole::Treasurer->value))->toBeTrue()
-        ->and($whip?->user?->hasRole(ClubRole::FinancialVerifier->value))->toBeTrue()
-        ->and($treasurer?->id)->not->toBe($whip?->id);
-});
-
-it('gives every member a login and an admission history entry', function (): void {
-    expect(Member::query()->whereNull('user_id')->count())->toBe(0)
-        ->and(MembershipStatusHistory::query()->count())->toBe(20);
-});
-
-it('opens a contribution period for every month since the club was founded', function (): void {
-    // Founding month through the current month, inclusive.
-    $expected = (int) abs(CarbonImmutable::parse('2026-01-01')->diffInMonths(CarbonImmutable::now())) + 1;
-
-    expect(ContributionPeriod::query()->count())->toBe($expected)
-        ->and(ContributionPeriod::query()->where('year', 2026)->where('month', 1)->exists())->toBeTrue();
-});
-
-it('leaves the current month open', function (): void {
-    $current = ContributionPeriod::query()
-        ->orderByDesc('year')
-        ->orderByDesc('month')
-        ->first();
-
-    expect($current?->status)->toBe(ContributionPeriodStatus::Open);
-});
-
-it('records verified payments so the ledger is not empty', function (): void {
-    expect(Payment::query()->where('status', PaymentStatus::Verified->value)->count())
-        ->toBeGreaterThan(0);
-});
-
-it('leaves payments in every reviewable state so the action buttons have work', function (): void {
-    expect(Payment::query()->where('status', PaymentStatus::Submitted->value)->count())
-        ->toBeGreaterThan(0, 'Expected payments awaiting verification')
-        ->and(Payment::query()->where('status', PaymentStatus::Rejected->value)->count())
-        ->toBeGreaterThan(0, 'Expected a rejected payment')
-        ->and(Payment::query()->where('status', PaymentStatus::ReversalPending->value)->count())
-        ->toBeGreaterThan(0, 'Expected a reversal awaiting a second officer');
-});
-
-it('spreads expenses across the whole approval chain', function (): void {
-    foreach ([ExpenseStatus::Submitted, ExpenseStatus::Approved, ExpenseStatus::Paid, ExpenseStatus::Verified, ExpenseStatus::Rejected] as $status) {
-        expect(Expense::query()->where('status', $status->value)->count())
-            ->toBeGreaterThan(0, 'Expected an expense at '.$status->value);
-    }
-});
-
-it('seeds a governance cycle with attendance, confirmed minutes and votes', function (): void {
-    $held = Meeting::query()->where('reference', 'MTG-2026-001')->first();
-
-    expect($held)->not->toBeNull()
-        ->and($held?->attendances()->count())->toBe(20)
-        ->and($held?->latestMinute()?->isConfirmed())->toBeTrue()
-        // A future meeting too, so the dashboard's next-meeting card fills in.
-        ->and(Meeting::query()->where('scheduled_for', '>', now())->exists())->toBeTrue()
-        ->and(Proposal::query()->where('status', ProposalStatus::Passed->value)->exists())->toBeTrue()
-        ->and(Proposal::query()->where('status', ProposalStatus::Open->value)->exists())->toBeTrue()
-        ->and(Proposal::query()->where('status', ProposalStatus::Draft->value)->exists())->toBeTrue()
-        ->and(Vote::query()->count())->toBeGreaterThan(0);
-});
-
-it('seeds action items in a spread of statuses', function (): void {
-    foreach ([ActionItemStatus::Open, ActionItemStatus::InProgress, ActionItemStatus::Blocked, ActionItemStatus::Completed] as $status) {
-        expect(ActionItem::query()->where('status', $status->value)->count())
-            ->toBeGreaterThan(0, 'Expected an action item at '.$status->value);
-    }
-});
-
-it('seeds a live, a decided and a draft election', function (): void {
-    expect(PositionPoll::query()->where('status', PositionPollStatus::Open->value)->exists())->toBeTrue()
-        ->and(PositionPoll::query()->where('status', PositionPollStatus::Draft->value)->exists())->toBeTrue();
-
-    $decided = PositionPoll::query()->where('status', PositionPollStatus::Decided->value)->first();
-
-    // The winner must actually hold the office, which is the whole point of
-    // closing a poll rather than just recording the count.
-    expect($decided)->not->toBeNull()
-        ->and($decided?->winning_candidate_id)->not->toBeNull();
-
-    $winner = PositionPollCandidate::query()->find($decided?->winning_candidate_id);
-
-    expect(PositionHolding::query()
-        ->where('position', $decided?->position->value)
-        ->whereNull('held_to')
-        ->value('member_id'))->toBe($winner?->member_id);
-});
-
-it('leaves a few members in arrears so the arrears figures are meaningful', function (): void {
-    $behind = Member::query()
-        ->whereHas('obligations', fn ($query) => $query->where('amount_paid', 0))
-        ->count();
-
-    expect($behind)->toBeGreaterThan(0);
-});
-
-it('takes one expense all the way through to verification', function (): void {
-    $expense = Expense::query()->where('reference', 'EXP-0001')->first();
-
-    expect($expense?->status)->toBe(ExpenseStatus::Verified)
-        ->and($expense?->requested_by_member_id)->not->toBe($expense?->approved_by_member_id)
-        ->and($expense?->verified_by_member_id)->not->toBe($expense?->approved_by_member_id);
-});
-
-it('is idempotent', function (): void {
-    $periods = ContributionPeriod::query()->count();
-    $payments = Payment::query()->count();
-
-    (new MusuwaNationSeeder)->run();
+    $this->seed(DatabaseSeeder::class);
 
     expect(Member::query()->count())->toBe(20)
         ->and(User::query()->count())->toBe(20)
-        ->and(ContributionPeriod::query()->count())->toBe($periods)
-        ->and(Payment::query()->count())->toBe($payments);
+        ->and(MembershipStatusHistory::query()->count())->toBe(20)
+        ->and(PositionHolding::query()->count())->toBe(10)
+        ->and(ContributionPeriod::query()->count())->toBe(3)
+        ->and(MemberObligation::query()->count())->toBe(60)
+        ->and(Payment::query()->count())->toBe(16)
+        ->and(PaymentAllocation::query()->count())->toBe(16)
+        ->and($member->fresh()->phone)->toBe('+256771234567')
+        ->and($member->fresh()->position)->toBeNull()
+        ->and($obligation->fresh()->amount_paid)->toBe(15000);
 });
 
-it('labels every club position', function (): void {
-    foreach (ClubPosition::cases() as $position) {
-        expect($position->label())->not->toBe('');
+it('imports the corrected August total without counting withdrawal charges as contributions', function (): void {
+    $august = MemberObligation::query()->whereHas('contributionPeriod', fn ($query) => $query->where('month', 8))->get();
+
+    expect(Payment::query()->count())->toBe(16)
+        ->and(Payment::query()->sum('amount'))->toBe(945000)
+        ->and(Payment::query()->sum('unapplied_amount'))->toBe(0)
+        ->and(PaymentAllocation::query()->sum('amount'))->toBe(945000)
+        ->and($august->sum('amount') - $august->sum('amount_paid'))->toBe(255000)
+        ->and($august->where('status', ObligationStatus::Paid))->toHaveCount(15)
+        ->and($august->where('status', ObligationStatus::Unpaid))->toHaveCount(4)
+        ->and($august->where('status', ObligationStatus::PartiallyPaid))->toHaveCount(1);
+
+    foreach (['Turyakira Trevor', 'Lubega James Benjamin', 'Ssegawa Kibombo'] as $name) {
+        $member = Member::query()->where('full_name', $name)->firstOrFail();
+        expect($august->firstWhere('member_id', $member->id)?->amount_paid)->toBe(60000);
     }
+
+    $shaun = Member::query()->where('full_name', 'Ariko Shaun Opio')->firstOrFail();
+    expect($august->firstWhere('member_id', $shaun->id)?->outstanding())->toBe(15000)
+        ->and(MemberObligation::query()->whereHas('contributionPeriod', fn ($query) => $query->whereIn('month', [9, 10]))->sum('amount_paid'))->toBe(0);
+
+    foreach (Payment::query()->get() as $payment) {
+        expect($payment->status)->toBe(PaymentStatus::Verified)
+            ->and($payment->reviewed_by_member_id)->toBeNull()
+            ->and($payment->reviewed_at)->toBeNull()
+            ->and($payment->notes)->toContain('accounting date', '20,295');
+    }
+});
+
+it('refuses to mix the opening import with old demo history', function (): void {
+    ContributionPeriod::factory()->create(['year' => 2026, 'month' => 1]);
+
+    expect(fn () => $this->seed(MusuwaNationSeeder::class))->toThrow(RuntimeException::class, 'Existing pre-August or demo history')
+        ->and(Payment::query()->sum('amount'))->toBe(945000);
+});
+
+it('keeps imported reversals from being silently reapplied on a rerun', function (): void {
+    $payment = Payment::query()->firstOrFail();
+    $payment->update(['status' => PaymentStatus::Reversed]);
+
+    $this->seed(MusuwaNationSeeder::class);
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Reversed)
+        ->and(Payment::query()->count())->toBe(16);
+});
+
+it('allows a seeded member to sign in and requires email verification', function (): void {
+    $user = User::query()->where('email', 'fetaowen@gmail.com')->firstOrFail();
+
+    $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('dashboard', absolute: false));
+    $this->assertAuthenticatedAs($user);
+    $this->get(route('dashboard'))->assertRedirect(route('verification.notice'));
 });
