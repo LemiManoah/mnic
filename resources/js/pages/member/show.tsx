@@ -16,15 +16,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { formatUgx } from '@/lib/money';
+import { memberStatement, memberStatementPdf } from '@/routes/export';
 import {
     edit as editMember,
     index as memberIndex,
     show as showMember,
 } from '@/routes/member';
-import {
-    memberStatement,
-    memberStatementPdf,
-} from '@/routes/export';
 import type {
     AuditLog,
     BreadcrumbItem,
@@ -195,14 +192,8 @@ export default function MemberShow({
                                         value={member.phone}
                                     />
                                     <DetailRow
-                                        label="Emergency contact"
-                                        value={
-                                            member.emergency_contact ?? (
-                                                <span className="text-muted-foreground">
-                                                    Not provided
-                                                </span>
-                                            )
-                                        }
+                                        label="Pioneer member"
+                                        value={member.is_pioneer ? 'Yes' : 'No'}
                                     />
                                     <DetailRow
                                         label="Joined"

@@ -15,6 +15,7 @@ final class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SettingSeeder::class,
             MusuwaNationSeeder::class,
+            PioneerMemberSeeder::class,
         ]);
     }
 }

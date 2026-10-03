@@ -7,6 +7,7 @@ import ListFilters from '@/components/list-filters';
 import PaginationLinks from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -70,6 +71,10 @@ function AddMemberDialog() {
 
                 <Form
                     {...MemberController.store.form()}
+                    transform={(data) => ({
+                        ...data,
+                        is_pioneer: data.is_pioneer === '1',
+                    })}
                     options={{ preserveScroll: true }}
                     onSuccess={() => setOpen(false)}
                     resetOnSuccess
@@ -113,16 +118,18 @@ function AddMemberDialog() {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="emergency_contact">
-                                    Emergency contact
-                                </Label>
-                                <Input
-                                    id="emergency_contact"
-                                    name="emergency_contact"
-                                />
-                                <InputError
-                                    message={errors.emergency_contact}
-                                />
+                                <div className="flex items-center gap-3">
+                                    <Checkbox
+                                        id="is_pioneer"
+                                        name="is_pioneer"
+                                        value="1"
+                                        aria-invalid={!!errors.is_pioneer}
+                                    />
+                                    <Label htmlFor="is_pioneer">
+                                        Pioneer member
+                                    </Label>
+                                </div>
+                                <InputError message={errors.is_pioneer} />
                             </div>
 
                             <div className="grid gap-2">

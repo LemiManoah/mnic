@@ -31,7 +31,7 @@ final class UpdateMemberRequest extends FormRequest
             'member_number' => ['required', 'string', 'max:255', Rule::unique(Member::class)->ignore($member->id)],
             'full_name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:255'],
-            'emergency_contact' => ['nullable', 'string', 'max:255'],
+            'is_pioneer' => ['sometimes', 'boolean'],
             'referred_by_member_id' => ['nullable', 'string', Rule::exists(Member::class, 'id')],
         ];
     }

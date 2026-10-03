@@ -35,7 +35,7 @@ export type Member = {
     full_name: string;
     position: ClubPosition | null;
     phone: string;
-    emergency_contact: string | null;
+    is_pioneer: boolean;
     joined_at: string;
     status: MemberStatus;
     created_at: string;

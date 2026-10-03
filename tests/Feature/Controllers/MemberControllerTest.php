@@ -125,7 +125,8 @@ it('allows a secretary to create a member', function (): void {
     $member = Member::query()->where('member_number', 'MN-0100')->first();
 
     expect($member)->not->toBeNull()
-        ->and($member?->status)->toBe(MemberStatus::Prospective);
+        ->and($member?->status)->toBe(MemberStatus::Prospective)
+        ->and($member?->is_pioneer)->toBeFalse();
 });
 
 it('denies plain members from storing members', function (): void {
@@ -181,4 +182,64 @@ it('denies plain members from updating members', function (): void {
     ]);
 
     $response->assertForbidden();
+});
+
+it('creates pioneer and ordinary members from explicit checkbox values', function (bool $isPioneer): void {
+    $actor = memberWithRole(ClubRole::Secretary);
+
+    $this->actingAs($actor->user)->post(route('member.store'), [
+        'member_number' => 'MN-0100',
+        'full_name' => 'New Member',
+        'phone' => '+256700000000',
+        'joined_at' => now()->toDateString(),
+        'is_pioneer' => $isPioneer,
+    ])->assertSessionHasNoErrors()->assertRedirectToRoute('member.index');
+
+    expect(Member::query()->where('member_number', 'MN-0100')->firstOrFail()->is_pioneer)->toBe($isPioneer);
+})->with([true, false]);
+
+it('allows pioneer status to be checked and unchecked', function (): void {
+    $actor = memberWithRole(ClubRole::Secretary);
+    $member = Member::factory()->create();
+
+    foreach ([true, false] as $isPioneer) {
+        $this->actingAs($actor->user)->put(route('member.update', $member), [
+            'member_number' => $member->member_number,
+            'full_name' => $member->full_name,
+            'phone' => $member->phone,
+            'is_pioneer' => $isPioneer,
+        ])->assertSessionHasNoErrors()->assertRedirectToRoute('member.index');
+
+        expect($member->fresh()->is_pioneer)->toBe($isPioneer);
+    }
+});
+
+it('rejects invalid pioneer values when creating or updating a member', function (): void {
+    $actor = memberWithRole(ClubRole::Secretary);
+    $member = Member::factory()->create();
+    $attributes = [
+        'member_number' => 'MN-0100',
+        'full_name' => 'New Member',
+        'phone' => '+256700000000',
+        'joined_at' => now()->toDateString(),
+        'is_pioneer' => 'invalid',
+    ];
+
+    $this->actingAs($actor->user)->post(route('member.store'), $attributes)->assertSessionHasErrors('is_pioneer');
+    $this->actingAs($actor->user)->put(route('member.update', $member), $attributes)->assertSessionHasErrors('is_pioneer');
+
+    expect($member->fresh()->is_pioneer)->toBeFalse();
+});
+
+it('keeps pioneer status when an update omits the flag', function (): void {
+    $actor = memberWithRole(ClubRole::Secretary);
+    $member = Member::factory()->create(['is_pioneer' => true]);
+
+    $this->actingAs($actor->user)->put(route('member.update', $member), [
+        'member_number' => $member->member_number,
+        'full_name' => $member->full_name,
+        'phone' => $member->phone,
+    ])->assertSessionHasNoErrors();
+
+    expect($member->fresh()->is_pioneer)->toBeTrue();
 });

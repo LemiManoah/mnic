@@ -20,12 +20,12 @@ test('to array', function (): void {
             'member_number',
             'full_name',
             'phone',
-            'emergency_contact',
             'joined_at',
             'status',
             'created_at',
             'updated_at',
             'position',
+            'is_pioneer',
         ]);
 });
 

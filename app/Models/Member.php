@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read string $full_name
  * @property-read ClubPosition|null $position
  * @property-read string $phone
- * @property-read string|null $emergency_contact
+ * @property-read bool $is_pioneer
  * @property-read CarbonInterface $joined_at
  * @property-read MemberStatus $status
  * @property-read CarbonInterface $created_at
@@ -35,6 +35,11 @@ final class Member extends Model
     use HasFactory;
 
     use HasUuids;
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'is_pioneer' => false,
+    ];
 
     /**
      * @return array<string, string>
@@ -49,7 +54,7 @@ final class Member extends Model
             'full_name' => 'string',
             'position' => ClubPosition::class,
             'phone' => 'string',
-            'emergency_contact' => 'string',
+            'is_pioneer' => 'boolean',
             'joined_at' => 'date',
             'status' => MemberStatus::class,
             'created_at' => 'datetime',

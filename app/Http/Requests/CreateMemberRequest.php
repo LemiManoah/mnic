@@ -25,7 +25,7 @@ final class CreateMemberRequest extends FormRequest
             'member_number' => ['required', 'string', 'max:255', Rule::unique(Member::class)],
             'full_name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:255'],
-            'emergency_contact' => ['nullable', 'string', 'max:255'],
+            'is_pioneer' => ['sometimes', 'boolean'],
             'joined_at' => ['required', 'date'],
             'referred_by_member_id' => ['nullable', 'string', Rule::exists(Member::class, 'id')],
         ];

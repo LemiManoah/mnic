@@ -6,6 +6,7 @@ import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/admin/layout';
@@ -56,6 +57,10 @@ export default function MemberEdit({
                         <CardContent>
                             <Form
                                 {...MemberController.update.form(member.id)}
+                                transform={(data) => ({
+                                    ...data,
+                                    is_pioneer: data.is_pioneer === '1',
+                                })}
                                 className="space-y-6"
                             >
                                 {({ processing, errors }) => (
@@ -106,21 +111,24 @@ export default function MemberEdit({
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label htmlFor="emergency_contact">
-                                                Emergency contact
-                                            </Label>
-                                            <Input
-                                                id="emergency_contact"
-                                                name="emergency_contact"
-                                                defaultValue={
-                                                    member.emergency_contact ??
-                                                    ''
-                                                }
-                                            />
+                                            <div className="flex items-center gap-3">
+                                                <Checkbox
+                                                    id="is_pioneer"
+                                                    name="is_pioneer"
+                                                    value="1"
+                                                    defaultChecked={
+                                                        member.is_pioneer
+                                                    }
+                                                    aria-invalid={
+                                                        !!errors.is_pioneer
+                                                    }
+                                                />
+                                                <Label htmlFor="is_pioneer">
+                                                    Pioneer member
+                                                </Label>
+                                            </div>
                                             <InputError
-                                                message={
-                                                    errors.emergency_contact
-                                                }
+                                                message={errors.is_pioneer}
                                             />
                                         </div>
 

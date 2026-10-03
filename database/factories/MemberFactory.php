@@ -23,7 +23,7 @@ final class MemberFactory extends Factory
             'full_name' => fake()->name(),
             'position' => null,
             'phone' => fake()->phoneNumber(),
-            'emergency_contact' => fake()->phoneNumber(),
+            'is_pioneer' => false,
             'joined_at' => fake()->dateTimeBetween('-2 years')->format('Y-m-d'),
             'status' => MemberStatus::Active,
         ];
