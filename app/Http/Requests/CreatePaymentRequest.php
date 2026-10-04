@@ -37,7 +37,7 @@ final class CreatePaymentRequest extends FormRequest
             'excess_allocation' => ['nullable', Rule::in(['advance', 'fees', 'split'])],
             'paid_on' => ['required', 'date'],
             'method' => ['required', new Enum(PaymentMethod::class)],
-            'reference' => ['required', 'string', 'max:255', Rule::unique(Payment::class, 'reference')],
+            'external_reference' => ['nullable', 'string', 'max:255', Rule::unique(Payment::class, 'external_reference')],
             'notes' => ['nullable', 'string', 'max:1000'],
             'evidence' => ['nullable', 'file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'],
         ];

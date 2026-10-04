@@ -32,7 +32,12 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 4pt 6pt; vertical-align: top; }
 
-        table.data { margin-top: 4pt; }
+        table.data { margin-top: 4pt; table-layout: fixed; page-break-inside: auto; }
+        table.data thead { display: table-header-group; }
+        table.data tbody { display: table-row-group; page-break-inside: auto; }
+        table.data tr { page-break-inside: avoid; page-break-after: auto; }
+        table.data th, table.data td { overflow-wrap: break-word; word-wrap: break-word; white-space: normal; }
+        h2 { page-break-after: avoid; }
         table.data th {
             border-bottom: 1px solid #999;
             font-size: 8.5pt;
@@ -70,6 +75,7 @@
             color: #777;
         }
         .footer .right { float: right; }
+        @yield('report-styles')
     </style>
 </head>
 <body>

@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int $unapplied_amount
  * @property-read CarbonInterface $paid_on
  * @property-read PaymentMethod $method
+ * @property-read string|null $external_reference
+ * @property-read string|null $import_key
  * @property-read string $reference
  * @property-read string|null $notes
  * @property-read PaymentStatus $status
@@ -62,6 +64,8 @@ final class Payment extends Model
             'paid_on' => 'date',
             'method' => PaymentMethod::class,
             'reference' => 'string',
+            'external_reference' => 'string',
+            'import_key' => 'string',
             'notes' => 'string',
             'status' => PaymentStatus::class,
             'recorded_by_member_id' => 'string',

@@ -62,12 +62,12 @@ it('allows a treasurer to record a payment for another member', function (): voi
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,
-        'reference' => 'MM-1234',
+        'external_reference' => 'MM-1234',
     ]);
 
     $response->assertRedirectToRoute('payment.index');
 
-    expect(Payment::query()->where('reference', 'MM-1234')->first()?->recorded_by_member_id)
+    expect(Payment::query()->where('external_reference', 'MM-1234')->first()?->recorded_by_member_id)
         ->toBe($actor->id);
 });
 
@@ -83,13 +83,13 @@ it('stores evidence uploaded with a payment', function (): void {
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,
-        'reference' => 'MM-5678',
+        'external_reference' => 'MM-5678',
         'evidence' => UploadedFile::fake()->create('receipt.pdf', 100, 'application/pdf'),
     ]);
 
     $response->assertRedirectToRoute('payment.index');
 
-    expect(Payment::query()->where('reference', 'MM-5678')->first()?->evidence)->toHaveCount(1);
+    expect(Payment::query()->where('external_reference', 'MM-5678')->first()?->evidence)->toHaveCount(1);
 });
 
 it('lets a plain member record a payment for themselves', function (): void {
@@ -101,7 +101,7 @@ it('lets a plain member record a payment for themselves', function (): void {
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::Cash->value,
-        'reference' => 'CS-0001',
+        'external_reference' => 'CS-0001',
     ]);
 
     $response->assertRedirectToRoute('payment.index');
@@ -117,7 +117,7 @@ it('stops a plain member recording a payment for somebody else', function (): vo
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::Cash->value,
-        'reference' => 'CS-0002',
+        'external_reference' => 'CS-0002',
     ]);
 
     $response->assertSessionHasErrors('member_id');
@@ -129,7 +129,7 @@ it('rejects a duplicate transaction reference', function (): void {
     $actor = memberWithRole(ClubRole::Treasurer);
     $member = Member::factory()->create();
 
-    Payment::factory()->create(['reference' => 'MM-DUP']);
+    Payment::factory()->create(['external_reference' => 'MM-DUP']);
 
     $response = $this->actingAs($actor->user)->post(route('payment.store'), [
         'member_id' => $member->id,
@@ -137,10 +137,10 @@ it('rejects a duplicate transaction reference', function (): void {
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,
-        'reference' => 'MM-DUP',
+        'external_reference' => 'MM-DUP',
     ]);
 
-    $response->assertSessionHasErrors('reference');
+    $response->assertSessionHasErrors('external_reference');
 });
 
 it('rejects a zero or negative amount', function (): void {
@@ -153,7 +153,7 @@ it('rejects a zero or negative amount', function (): void {
         'amount' => 0,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,
-        'reference' => 'MM-ZERO',
+        'external_reference' => 'MM-ZERO',
     ]);
 
     $response->assertSessionHasErrors('amount');

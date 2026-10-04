@@ -25,11 +25,13 @@ final readonly class PdfExport
      */
     public function download(string $view, string $filename, array $data): Response
     {
+        $orientation = isset($data['headings']) && is_array($data['headings']) && count($data['headings']) > 7 ? 'landscape' : 'portrait';
+
         return Pdf::loadView($view, [
             ...$data,
             'clubName' => config('app.tenant.name', config('app.name')),
         ])
-            ->setPaper('a4')
+            ->setPaper('a4', $orientation)
             ->download($filename);
     }
 

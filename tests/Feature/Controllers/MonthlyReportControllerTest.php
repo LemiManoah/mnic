@@ -61,6 +61,7 @@ it('shows the monthly transparency report with contributions cash and reconcilia
         'member_id' => $member->id,
         'status' => PaymentStatus::Verified,
         'amount' => 45000,
+        'withdrawal_fee_amount' => 2000,
         'paid_on' => '2026-08-05',
         'reference' => 'MM-REPORT',
     ]);
@@ -97,6 +98,7 @@ it('shows the monthly transparency report with contributions cash and reconcilia
             ->where('arrears.0.outstanding', 15000)
             ->where('reconciliation.is_confirmed', true)
             ->where('payments.0.reference', 'MM-REPORT')
+            ->where('payments.0.withdrawal_fee_amount', 2000)
             ->where('expenses.0.reference', 'EXP-REPORT'));
 });
 

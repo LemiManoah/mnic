@@ -23,6 +23,7 @@ final readonly class RecordPayment
     public function __construct(
         private RecordAuditEvent $recordAuditEvent,
         private GetPaymentContributionDue $getPaymentContributionDue,
+        private GeneratePaymentReference $generatePaymentReference,
     ) {
         //
     }
@@ -45,6 +46,7 @@ final readonly class RecordPayment
                 'withdrawal_fee_amount' => ['nullable', 'integer', 'min:0'],
                 'contribution_due_amount' => ['nullable', 'integer', 'min:0'],
                 'excess_allocation' => ['nullable', Rule::in(['advance', 'fees', 'split'])],
+                'external_reference' => ['nullable', 'string', 'max:255', Rule::unique(Payment::class, 'external_reference')],
             ])->validate();
 
             $member = Member::query()->lockForUpdate()->findOrFail($allocation['member_id']);
@@ -88,6 +90,8 @@ final readonly class RecordPayment
 
             $payment = Payment::query()->create([
                 ...$attributes,
+                'reference' => $this->generatePaymentReference->handle(),
+                'import_key' => null,
                 'contribution_period_id' => $periodId,
                 'withdrawal_fee_amount' => $fee,
                 'contribution_due_amount' => $due,

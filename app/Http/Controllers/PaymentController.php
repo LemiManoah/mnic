@@ -38,6 +38,8 @@ final readonly class PaymentController
             ->when($search !== '', fn (Builder $query): Builder => $query
                 ->where(fn (Builder $inner): Builder => $inner
                     ->where('reference', 'like', sprintf('%%%s%%', $search))
+                    ->orWhere('external_reference', 'like', sprintf('%%%s%%', $search))
+                    ->orWhere('import_key', 'like', sprintf('%%%s%%', $search))
                     ->orWhereHas('member', fn (Builder $member): Builder => $member
                         ->where('full_name', 'like', sprintf('%%%s%%', $search))
                         ->orWhere('member_number', 'like', sprintf('%%%s%%', $search)))))

@@ -66,6 +66,22 @@
         <p>Unapplied advance held against future months:
             <strong>UGX {{ number_format($advance) }}</strong></p>
     @endif
+    <h2>Verified receipts</h2>
+    <table class="data">
+        <thead><tr><th>Reference</th><th>Paid on</th><th class="num">Withdrawal fee</th><th class="num">Received</th></tr></thead>
+        <tbody>
+            @forelse ($payments as $payment)
+                <tr>
+                    <td>{{ $payment->reference }}</td>
+                    <td>{{ $payment->paid_on->toDateString() }}</td>
+                    <td class="num">{{ number_format($payment->withdrawal_fee_amount) }}</td>
+                    <td class="num">{{ number_format($payment->amount) }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="4">No verified receipts.</td></tr>
+            @endforelse
+        </tbody>
+    </table>
 @endsection
 
 @section('note')

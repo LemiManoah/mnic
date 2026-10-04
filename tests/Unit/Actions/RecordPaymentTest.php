@@ -21,11 +21,13 @@ it('records a submitted payment', function (): void {
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,
-        'reference' => 'MM-0001',
+        'external_reference' => 'MM-0001',
     ], $actor, null, '127.0.0.1');
 
     expect($payment)->toBeInstanceOf(Payment::class)
         ->and($payment->status)->toBe(PaymentStatus::Submitted)
+        ->and($payment->reference)->toMatch('/^MNIC-\\d{6}$/')
+        ->and($payment->external_reference)->toBe('MM-0001')
         ->and($payment->unapplied_amount)->toBe(0)
         ->and($payment->recorded_by_member_id)->toBe($actor->id);
 
@@ -44,7 +46,7 @@ it('stores uploaded evidence on the private disk', function (): void {
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::BankTransfer->value,
-        'reference' => 'BT-0001',
+        'external_reference' => 'BT-0001',
     ], $actor, UploadedFile::fake()->create('receipt.pdf', 120, 'application/pdf'), '127.0.0.1');
 
     $evidence = PaymentEvidence::query()->where('payment_id', $payment->id)->first();

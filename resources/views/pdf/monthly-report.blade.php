@@ -3,6 +3,15 @@
 @section('title', 'Monthly report ' . $period['label'])
 @section('doc-type', 'Monthly transparency report · ' . $period['label'])
 
+@section('report-styles')
+    body { font-size: 9pt; line-height: 1.25; }
+    img { width: 100px !important; margin-bottom: 4px !important; }
+    .doc-type { margin-bottom: 8pt; }
+    h2 { margin-top: 12pt; }
+    table.data th, table.data td { padding: 3pt 4pt; }
+    table.data th { font-size: 8pt; letter-spacing: 0; }
+@endsection
+
 @section('content')
     @unless ($reconciliation && $reconciliation['is_confirmed'])
         {{-- The same warning the screen carries. A report that looks official
@@ -142,12 +151,14 @@
     <p>Payments are shown by payment date and may settle earlier contribution periods.</p>
 
     <table class="data">
+        <colgroup><col style="width: 30%;"><col style="width: 22%;"><col style="width: 18%;"><col style="width: 15%;"><col style="width: 15%;"></colgroup>
         <thead>
             <tr>
                 <th>Member</th>
                 <th>Reference</th>
                 <th>Paid on</th>
-                <th class="num">Amount</th>
+                <th class="num">Withdrawal fee</th>
+                <th class="num">Received</th>
             </tr>
         </thead>
         <tbody>
@@ -156,12 +167,13 @@
                     <td>{{ $payment['member_name'] }}</td>
                     <td>{{ $payment['reference'] }}</td>
                     <td>{{ $payment['paid_on'] }}</td>
+                    <td class="num">{{ number_format($payment['withdrawal_fee_amount']) }}</td>
                     <td class="num">{{ number_format($payment['amount']) }}</td>
                 </tr>
             @endforeach
 
             @if ($payments->isEmpty())
-                <tr><td colspan="4">No verified payments received this month.</td></tr>
+                <tr><td colspan="5">No verified payments received this month.</td></tr>
             @endif
         </tbody>
     </table>

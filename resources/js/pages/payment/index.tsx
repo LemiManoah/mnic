@@ -389,16 +389,21 @@ function RecordPaymentDialog({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="reference">
-                                    Transaction reference
+                                <Label htmlFor="external_reference">
+                                    Bank / Mobile Money reference (optional)
                                 </Label>
                                 <Input
-                                    id="reference"
-                                    name="reference"
-                                    required
-                                    placeholder="MM-12345678"
+                                    id="external_reference"
+                                    name="external_reference"
+                                    placeholder="Provider transaction reference"
                                 />
-                                <InputError message={errors.reference} />
+                                <p className="text-xs text-muted-foreground">
+                                    An MNIC payment reference is generated
+                                    automatically when you submit.
+                                </p>
+                                <InputError
+                                    message={errors.external_reference}
+                                />
                             </div>
 
                             <div className="grid gap-2">

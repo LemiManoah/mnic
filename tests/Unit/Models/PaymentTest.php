@@ -38,6 +38,8 @@ test('to array', function (): void {
             'withdrawal_fee_amount',
             'contribution_due_amount',
             'contribution_period_id',
+            'external_reference',
+            'import_key',
         ]);
 });
 

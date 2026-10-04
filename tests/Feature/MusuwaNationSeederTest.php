@@ -261,10 +261,9 @@ it('refuses to take a requested number from an unrelated member', function (): v
         ->and($outsider->fresh()->member_number)->toBe('001');
 });
 
-
 it('imports Namara Honest August payment once against member 011 without a fee', function (): void {
     $member = Member::query()->where('member_number', '011')->firstOrFail();
-    $payment = Payment::query()->where('reference', 'OPENING-202608-MN-0005')->sole();
+    $payment = Payment::query()->where('import_key', 'OPENING-202608-MN-0005')->sole();
 
     $this->seed(MusuwaNationSeeder::class);
 
@@ -273,5 +272,6 @@ it('imports Namara Honest August payment once against member 011 without a fee',
         ->and($payment->amount)->toBe(60000)
         ->and($payment->withdrawal_fee_amount)->toBe(0)
         ->and($payment->allocations()->sum('amount'))->toBe(60000)
-        ->and(Payment::query()->where('reference', $payment->reference)->count())->toBe(1);
+        ->and(Payment::query()->where('import_key', $payment->import_key)->count())->toBe(1)
+        ->and($payment->reference)->toMatch('/^MNIC-\\d{6}$/');
 });

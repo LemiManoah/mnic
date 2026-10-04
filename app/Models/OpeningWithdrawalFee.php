@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read string $contribution_period_id
  * @property-read int $amount
  * @property-read CarbonInterface $paid_on
+ * @property-read string|null $import_key
  * @property-read string $reference
  * @property-read string $notes
  */
@@ -34,6 +35,7 @@ final class OpeningWithdrawalFee extends Model
             'amount' => 'integer',
             'paid_on' => 'date',
             'reference' => 'string',
+            'import_key' => 'string',
             'notes' => 'string',
         ];
     }

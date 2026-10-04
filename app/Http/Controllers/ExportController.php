@@ -83,6 +83,7 @@ final readonly class ExportController
             sprintf('statement-%s.pdf', $member->member_number),
             [
                 'member' => $member,
+                'payments' => $member->payments()->where('status', PaymentStatus::Verified->value)->oldest('paid_on')->get(),
                 'obligations' => $records->map(fn (MemberObligation $obligation): array => [
                     'period' => $obligation->contributionPeriod?->label() ?? '',
                     'amount' => $obligation->amount,

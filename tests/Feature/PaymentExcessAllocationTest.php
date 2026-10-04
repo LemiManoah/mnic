@@ -31,7 +31,7 @@ function excessPaymentAttributes(Member $member, int $amount = 62000): array
         'amount' => $amount,
         'paid_on' => '2026-08-31',
         'method' => PaymentMethod::MobileMoney->value,
-        'reference' => fake()->unique()->uuid(),
+        'external_reference' => fake()->unique()->uuid(),
     ];
 }
 

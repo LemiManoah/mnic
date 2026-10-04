@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Actions\GeneratePaymentReference;
 use App\Actions\OpenContributionPeriod;
 use App\Actions\RecordAuditEvent;
 use App\Enums\ClubPosition;
@@ -84,7 +85,7 @@ final class MusuwaNationSeeder extends Seeder
         throw_if(
             ContributionPeriod::query()->where('year', '<', 2026)
                 ->orWhere(fn ($query) => $query->where('year', 2026)->where('month', '<', 8))->exists()
-                || Payment::query()->where('reference', 'like', 'MM-PENDING-%')->exists(),
+                || Payment::query()->where(fn (Builder $query): Builder => $query->where('reference', 'like', 'MM-PENDING-%')->orWhere('external_reference', 'like', 'MM-PENDING-%'))->exists(),
             RuntimeException::class,
             'Existing pre-August or demo history requires review before importing the opening roll. Use a clean database; this seeder does not delete financial records.',
         );
@@ -214,16 +215,20 @@ final class MusuwaNationSeeder extends Seeder
         $period = ContributionPeriod::query()->where('year', 2026)->where('month', 8)->firstOrFail();
 
         foreach (self::AUGUST_CONTRIBUTIONS as $sequence => $amount) {
-            $reference = sprintf('OPENING-202608-MN-%04d', $sequence);
+            $importKey = sprintf('OPENING-202608-MN-%04d', $sequence);
 
             $member = $this->membersBySequence[$sequence];
-            $existingPayment = Payment::query()->where('reference', $reference)->first();
+            $existingPayment = Payment::query()->where('import_key', $importKey)->first();
 
             if ($existingPayment !== null) {
                 throw_if($existingPayment->member_id !== $member->id, RuntimeException::class, 'An opening payment belongs to a different member. Review the import before continuing.');
 
                 if (str_contains($existingPayment->notes ?? '', 'Excludes the UGX 20,295 unallocated withdrawal-charge balance.')) {
-                    $existingPayment->update(['notes' => str_replace('The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.', 'The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.', $existingPayment->notes ?? '')]);
+                    $existingPayment->update(['notes' => str_replace(
+                        'Excludes the UGX 20,295 unallocated withdrawal-charge balance.',
+                        'The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.',
+                        $existingPayment->notes ?? '',
+                    )]);
                 }
 
                 continue;
@@ -241,9 +246,10 @@ final class MusuwaNationSeeder extends Seeder
                 'unapplied_amount' => 0,
                 'paid_on' => '2026-08-31',
                 'method' => PaymentMethod::MobileMoney,
-                'reference' => $reference,
+                'reference' => resolve(GeneratePaymentReference::class)->handle(),
+                'import_key' => $importKey,
                 'status' => PaymentStatus::Verified,
-                'notes' => 'August opening contribution imported from the report dated 1 September 2026 and member-owner corrections. August 31 is an accounting date, not a known transaction date. Reference is an import identifier, not a Mobile Money receipt. Trevor, James, and Namara Honest later cleared August. Individual transaction dates and verification officers were not supplied. The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.',
+                'notes' => 'August opening contribution imported from the report dated 1 September 2026 and member-owner corrections. August 31 is an accounting date, not a known transaction date. The original import identifier is retained internally and is not a Mobile Money receipt. Trevor, James, and Namara Honest later cleared August. Individual transaction dates and verification officers were not supplied. The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.',
             ]);
 
             PaymentAllocation::query()->create([
@@ -264,15 +270,17 @@ final class MusuwaNationSeeder extends Seeder
     private function seedAugustWithdrawalFees(): void
     {
         $period = ContributionPeriod::query()->where('year', 2026)->where('month', 8)->firstOrFail();
-        $receipt = OpeningWithdrawalFee::query()->firstOrCreate(
-            ['reference' => 'OPENING-202608-WITHDRAWAL-FEES'],
-            [
+        $receipt = OpeningWithdrawalFee::query()->firstOrNew(['import_key' => 'OPENING-202608-WITHDRAWAL-FEES']);
+
+        if (! $receipt->exists) {
+            $receipt->fill([
+                'reference' => resolve(GeneratePaymentReference::class)->handle(),
                 'contribution_period_id' => $period->id,
                 'amount' => 20295,
                 'paid_on' => '2026-08-31',
                 'notes' => 'Aggregate withdrawal fee received through Mobile Money by Lubega James, from the report dated 1 September 2026. Individual member allocations and actual payment dates were not supplied. August 31 is an accounting date. This is money received, not an expense. No additional fees are assumed for Trevor, James, or Namara Honest later clearing August.',
-            ],
-        );
+            ])->save();
+        }
 
         throw_if($receipt->amount !== 20295 || $receipt->contribution_period_id !== $period->id, RuntimeException::class, 'The August opening withdrawal fee differs from the report. Review it before importing.');
 

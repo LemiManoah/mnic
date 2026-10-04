@@ -386,9 +386,8 @@ export default function MonthlyReportShow({
                                         <TableHead>Member</TableHead>
                                         <TableHead>Reference</TableHead>
                                         <TableHead>Paid on</TableHead>
-                                        <TableHead>
-                                            Amount received
-                                        </TableHead>
+                                        <TableHead>Withdrawal fee</TableHead>
+                                        <TableHead>Amount received</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -404,6 +403,11 @@ export default function MonthlyReportShow({
                                                 {payment.paid_on}
                                             </TableCell>
                                             <TableCell>
+                                                {formatUgx(
+                                                    payment.withdrawal_fee_amount,
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
                                                 {formatUgx(payment.amount)}
                                             </TableCell>
                                         </TableRow>
@@ -412,7 +416,7 @@ export default function MonthlyReportShow({
                                     {payments.length === 0 && (
                                         <TableRow>
                                             <TableCell
-                                                colSpan={4}
+                                                colSpan={5}
                                                 className="py-6 text-center text-muted-foreground"
                                             >
                                                 No verified payments received
