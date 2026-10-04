@@ -109,7 +109,10 @@ export default function ListFilters({
             )}
 
             {filters.map((filter) => (
-                <div key={filter.name} className="grid w-full min-w-0 gap-1 sm:w-auto">
+                <div
+                    key={filter.name}
+                    className="grid w-full min-w-0 gap-1 sm:w-auto"
+                >
                     <label
                         htmlFor={`filter-${filter.name}`}
                         className="text-xs text-muted-foreground"
@@ -122,7 +125,7 @@ export default function ListFilters({
                         onChange={(event) =>
                             applyFilter(filter.name, event.target.value)
                         }
-                        className="flex h-9 w-full min-w-0 max-w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                        className="flex h-9 w-full max-w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
                     >
                         <option value="">All</option>
                         {filter.options.map((option) => (

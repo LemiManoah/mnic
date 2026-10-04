@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property-read string $id
  * @property-read string $member_id
+ * @property-read int $withdrawal_fee_amount
+ * @property-read int|null $contribution_due_amount
  * @property-read int $amount
  * @property-read int $unapplied_amount
  * @property-read CarbonInterface $paid_on
@@ -52,6 +54,8 @@ final class Payment extends Model
             'id' => 'string',
             'member_id' => 'string',
             'amount' => 'integer',
+            'withdrawal_fee_amount' => 'integer',
+            'contribution_due_amount' => 'integer',
             'unapplied_amount' => 'integer',
             'paid_on' => 'date',
             'method' => PaymentMethod::class,
@@ -70,6 +74,11 @@ final class Payment extends Model
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
+    }
+
+    public function contributionAmount(): int
+    {
+        return $this->amount - $this->withdrawal_fee_amount;
     }
 
     /**

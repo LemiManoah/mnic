@@ -19,7 +19,14 @@ export function auditRecordName(log: AuditLog): string {
     for (const snapshot of [log.after, log.before]) {
         if (!snapshot) continue;
 
-        for (const key of ['title', 'full_name', 'reference', 'label', 'name', 'purpose']) {
+        for (const key of [
+            'title',
+            'full_name',
+            'reference',
+            'label',
+            'name',
+            'purpose',
+        ]) {
             const value = snapshot[key];
 
             if (typeof value === 'string' && value.trim() !== '') {
@@ -27,7 +34,10 @@ export function auditRecordName(log: AuditLog): string {
             }
         }
 
-        if (typeof snapshot.year === 'number' && typeof snapshot.month === 'number') {
+        if (
+            typeof snapshot.year === 'number' &&
+            typeof snapshot.month === 'number'
+        ) {
             return `${snapshot.year}-${String(snapshot.month).padStart(2, '0')}`;
         }
     }

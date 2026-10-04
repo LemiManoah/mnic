@@ -15,9 +15,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
-import { formatUgx } from '@/lib/money';
 import { readableAuditLabel } from '@/lib/audit';
 import { formatClubDateTime } from '@/lib/date';
+import { formatUgx } from '@/lib/money';
 import { memberStatement, memberStatementPdf } from '@/routes/export';
 import {
     edit as editMember,
@@ -147,10 +147,14 @@ export default function MemberShow({
                             <TabsTrigger value="contributions">
                                 Contributions
                             </TabsTrigger>
-                            <TabsTrigger value="status">Status history</TabsTrigger>
+                            <TabsTrigger value="status">
+                                Status history
+                            </TabsTrigger>
                             <TabsTrigger value="access">Access</TabsTrigger>
                             {canViewActivity && (
-                                <TabsTrigger value="activity">Activity</TabsTrigger>
+                                <TabsTrigger value="activity">
+                                    Activity
+                                </TabsTrigger>
                             )}
                         </TabsList>
                     </div>
@@ -339,6 +343,19 @@ export default function MemberShow({
                                                         {formatUgx(
                                                             payment.amount,
                                                         )}
+                                                        <span className="block text-xs text-muted-foreground">
+                                                            Contributions /
+                                                            advance:{' '}
+                                                            {formatUgx(
+                                                                payment.contribution_amount,
+                                                            )}
+                                                        </span>
+                                                        <span className="block text-xs text-muted-foreground">
+                                                            Withdrawal fees:{' '}
+                                                            {formatUgx(
+                                                                payment.withdrawal_fee_amount,
+                                                            )}
+                                                        </span>
                                                     </TableCell>
                                                     <TableCell>
                                                         <Badge variant="secondary">
@@ -484,10 +501,14 @@ export default function MemberShow({
                                                 {auditLogs.map((log) => (
                                                     <TableRow key={log.id}>
                                                         <TableCell className="whitespace-nowrap text-muted-foreground">
-                                                            {formatClubDateTime(log.created_at)}
+                                                            {formatClubDateTime(
+                                                                log.created_at,
+                                                            )}
                                                         </TableCell>
                                                         <TableCell>
-                                                            {readableAuditLabel(log.event)}
+                                                            {readableAuditLabel(
+                                                                log.event,
+                                                            )}
                                                         </TableCell>
                                                         <TableCell>
                                                             {log.actor_member

@@ -57,7 +57,6 @@ it('denies a non-administrator from updating a setting', function (): void {
     $response->assertForbidden();
 });
 
-
 it('rejects invalid numeric club settings', function (string $key, string $value): void {
     $actor = memberWithRole(ClubRole::Administrator);
     $setting = Setting::factory()->create(['key' => $key]);
@@ -84,6 +83,6 @@ it('allows an administrator to see setting controls', function (): void {
 
     $this->actingAs($actor->user)->get(route('setting.index'))
         ->assertOk()->assertInertia(fn ($page) => $page
-            ->where('today', now()->toDateString())
-            ->where('settings.0.can_update', true));
+        ->where('today', now()->toDateString())
+        ->where('settings.0.can_update', true));
 });

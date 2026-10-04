@@ -25,15 +25,17 @@ final readonly class VerifyPayment
 
     public function handle(Payment $payment, Member $verifier, ?string $ipAddress = null): Payment
     {
-        // Maker-checker: enforced here as well as in the policy, so the rule
-        // holds for any caller (job, command, MCP request) and not only HTTP.
-        throw_if($payment->recorded_by_member_id === $verifier->id, InvalidArgumentException::class, 'A payment cannot be verified by the member who recorded it.');
+        $payment = DB::transaction(function () use ($payment, $verifier, $ipAddress): Payment {
+            Member::query()->lockForUpdate()->findOrFail($payment->member_id);
+            $payment = Payment::query()->lockForUpdate()->findOrFail($payment->id);
 
-        throw_if($payment->status !== PaymentStatus::Submitted, InvalidArgumentException::class, 'Only a submitted payment can be verified.');
+            throw_if($payment->recorded_by_member_id === $verifier->id, InvalidArgumentException::class, 'A payment cannot be verified by the member who recorded it.');
+            throw_if($payment->status !== PaymentStatus::Submitted, InvalidArgumentException::class, 'Only a submitted payment can be verified.');
+            throw_if($payment->withdrawal_fee_amount < 0 || $payment->withdrawal_fee_amount > $payment->amount, InvalidArgumentException::class, 'Invalid payment allocation.');
+            throw_if($payment->withdrawal_fee_amount > 0 && ($payment->contribution_due_amount === null || $payment->contribution_due_amount === 0 || $payment->withdrawal_fee_amount > max(0, $payment->amount - $payment->contribution_due_amount)), InvalidArgumentException::class, 'Fees must come from the excess confirmed when the payment was recorded.');
 
-        DB::transaction(function () use ($payment, $verifier, $ipAddress): Payment {
             $before = $payment->toArray();
-            $remaining = $payment->amount;
+            $remaining = $payment->contributionAmount();
 
             $obligations = MemberObligation::query()
                 ->with('contributionPeriod')
@@ -42,6 +44,8 @@ final readonly class VerifyPayment
                     ObligationStatus::Unpaid->value,
                     ObligationStatus::PartiallyPaid->value,
                 ])
+                ->orderBy('id')
+                ->lockForUpdate()
                 ->get()
                 // Oldest period first, so payments always settle arrears before
                 // they run ahead into future obligations.

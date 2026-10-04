@@ -100,7 +100,6 @@ it('shows the monthly transparency report with contributions cash and reconcilia
             ->where('expenses.0.reference', 'EXP-REPORT'));
 });
 
-
 it('lists unpaid members only from the selected period and distinguishes the grace window', function (): void {
     $actor = memberWithRole(ClubRole::Member);
     $period = ContributionPeriod::factory()->create(['grace_ends_on' => now()->addDays(2)->toDateString()]);
@@ -123,8 +122,8 @@ it('lists unpaid members only from the selected period and distinguishes the gra
 
     $this->actingAs($actor->user)->get(route('monthly-report.show', $period))
         ->assertOk()->assertInertia(fn ($page) => $page
-            ->where('period.is_overdue', false)
-            ->has('arrears', 1)
-            ->where('arrears.0.member_id', $unpaid->id)
-            ->where('arrears.0.outstanding', 60000));
+        ->where('period.is_overdue', false)
+        ->has('arrears', 1)
+        ->where('arrears.0.member_id', $unpaid->id)
+        ->where('arrears.0.outstanding', 60000));
 });

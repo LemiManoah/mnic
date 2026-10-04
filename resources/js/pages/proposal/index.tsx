@@ -29,11 +29,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
+import { governance as exportGovernance } from '@/routes/export';
 import {
     index as proposalIndex,
     show as showProposal,
 } from '@/routes/proposal';
-import { governance as exportGovernance } from '@/routes/export';
 import type {
     BreadcrumbItem,
     MeetingOption,

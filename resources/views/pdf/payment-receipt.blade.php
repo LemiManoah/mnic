@@ -41,7 +41,7 @@
         </tr>
     </table>
 
-    @if ($allocations->isNotEmpty())
+    @if ($allocations->isNotEmpty() || $payment->unapplied_amount > 0 || $payment->withdrawal_fee_amount > 0)
         <h2>Applied to</h2>
 
         <table class="data">
@@ -65,6 +65,14 @@
                         <td class="num">{{ number_format($payment->unapplied_amount) }}</td>
                     </tr>
                 @endif
+                <tr>
+                    <td>Withdrawal fee contribution collected (not an expense)</td>
+                    <td class="num">{{ number_format($payment->withdrawal_fee_amount) }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Total received</strong></td>
+                    <td class="num"><strong>{{ number_format($payment->amount) }}</strong></td>
+                </tr>
             </tbody>
         </table>
     @endif

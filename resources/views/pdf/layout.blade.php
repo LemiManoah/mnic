@@ -78,6 +78,7 @@
         <span class="right">Generated {{ now()->toDayDateTimeString() }}</span>
     </div>
 
+    <img src="{{ public_path('musuwa_logo.jpeg') }}" alt="{{ $clubName }} logo" style="width: 145px; height: auto; margin-bottom: 8px;">
     <p class="club">{{ $clubName }}</p>
     <p class="doc-type">@yield('doc-type')</p>
 

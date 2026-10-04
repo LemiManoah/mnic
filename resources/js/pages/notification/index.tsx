@@ -47,7 +47,11 @@ export default function NotificationIndex({
                     />
 
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={toggleUnread}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={toggleUnread}
+                        >
                             {filters.unread ? 'Show all' : 'Unread only'}
                         </Button>
 
@@ -100,7 +104,9 @@ export default function NotificationIndex({
                             <div className="flex items-center gap-2">
                                 {notification.url && (
                                     <Button asChild variant="outline" size="sm">
-                                        <Link href={notification.url}>Open</Link>
+                                        <Link href={notification.url}>
+                                            Open
+                                        </Link>
                                     </Button>
                                 )}
 

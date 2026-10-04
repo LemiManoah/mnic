@@ -129,6 +129,7 @@ it('updates legacy identities without changing member ownership or passwords', f
 it('is idempotent and preserves later membership and contribution changes', function (): void {
     $member = Member::query()->where('member_number', 'MN-0003')->firstOrFail();
     $member->update(['phone' => '+256771234567', 'position' => null]);
+
     $obligation = MemberObligation::query()->whereHas('contributionPeriod', fn ($query) => $query->where('month', 9))->firstOrFail();
     $obligation->update(['amount_paid' => 15000]);
 

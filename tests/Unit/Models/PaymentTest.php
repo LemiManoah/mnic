@@ -35,6 +35,8 @@ test('to array', function (): void {
             'reversal_reason',
             'reversal_requested_by_member_id',
             'reversal_requested_at',
+            'withdrawal_fee_amount',
+            'contribution_due_amount',
         ]);
 });
 

@@ -15,11 +15,11 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'Musuwa Nation'),
 
     'tenant' => [
         'name' => env('TENANT_NAME', 'Musuwa Nation'),
-        'logo_url' => env('TENANT_LOGO_URL'),
+        'logo_url' => env('TENANT_LOGO_URL', '/musuwa_logo.jpeg'),
     ],
 
     /*

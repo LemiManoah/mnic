@@ -103,6 +103,8 @@ export type LedgerPayment = {
     id: string;
     amount: number;
     unapplied_amount: number;
+    withdrawal_fee_amount: number;
+    contribution_amount: number;
     paid_on: string;
     method: PaymentMethod;
     reference: string;
@@ -119,6 +121,9 @@ export type PaymentRow = {
     member_name: string;
     amount: number;
     unapplied_amount: number;
+    withdrawal_fee_amount: number;
+    contribution_amount: number;
+    contribution_due_amount: number | null;
     paid_on: string;
     method: PaymentMethod;
     reference: string;

@@ -27,6 +27,7 @@ final readonly class ApprovePaymentReversal
     public function handle(Payment $payment, Member $approver, ?string $ipAddress = null): Payment
     {
         return DB::transaction(function () use ($payment, $approver, $ipAddress): Payment {
+            Member::query()->lockForUpdate()->findOrFail($payment->member_id);
             $payment = Payment::query()
                 ->lockForUpdate()
                 ->findOrFail($payment->id);

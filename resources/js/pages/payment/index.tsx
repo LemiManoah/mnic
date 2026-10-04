@@ -35,8 +35,8 @@ import AppLayout from '@/layouts/app-layout';
 import { formatUgx } from '@/lib/money';
 import { payments as exportPayments } from '@/routes/export';
 import { index as paymentIndex } from '@/routes/payment';
-import { show as paymentReceipt } from '@/routes/payment-receipt';
 import { show as showEvidence } from '@/routes/payment-evidence';
+import { show as paymentReceipt } from '@/routes/payment-receipt';
 import type {
     BreadcrumbItem,
     MemberOption,
@@ -64,14 +64,35 @@ const STATUS_VARIANT: Record<
     reversed: 'secondary',
 };
 
+type PaymentMemberOption = MemberOption & {
+    contribution_due_amount: number;
+    contribution_due_period: string | null;
+};
+
 function RecordPaymentDialog({
     members,
     methodOptions,
 }: {
-    members: MemberOption[];
+    members: PaymentMemberOption[];
     methodOptions: Option[];
 }) {
     const [open, setOpen] = useState(false);
+    const [memberId, setMemberId] = useState('');
+    const [amount, setAmount] = useState('');
+    const [allocation, setAllocation] = useState('');
+    const [splitFee, setSplitFee] = useState('');
+    const member = members.find((item) => item.id === memberId);
+    const due = member?.contribution_due_amount ?? 0;
+    const received = Number(amount) || 0;
+    const excess = due > 0 ? Math.max(0, received - due) : 0;
+    const fee =
+        excess === 0
+            ? 0
+            : allocation === 'fees'
+              ? excess
+              : allocation === 'split'
+                ? Number(splitFee) || 0
+                : 0;
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -91,7 +112,19 @@ function RecordPaymentDialog({
                 <Form
                     {...PaymentController.store.form()}
                     options={{ preserveScroll: true }}
-                    onSuccess={() => setOpen(false)}
+                    transform={(data) => ({
+                        ...data,
+                        contribution_due_amount: due,
+                        excess_allocation: excess > 0 ? allocation : null,
+                        withdrawal_fee_amount: fee,
+                    })}
+                    onSuccess={() => {
+                        setOpen(false);
+                        setMemberId('');
+                        setAmount('');
+                        setAllocation('');
+                        setSplitFee('');
+                    }}
                     resetOnSuccess
                     className="space-y-4"
                 >
@@ -103,7 +136,12 @@ function RecordPaymentDialog({
                                     id="member_id"
                                     name="member_id"
                                     required
-                                    defaultValue=""
+                                    value={memberId}
+                                    onChange={(event) => {
+                                        setMemberId(event.target.value);
+                                        setAllocation('');
+                                        setSplitFee('');
+                                    }}
                                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
                                 >
                                     <option value="" disabled>
@@ -123,16 +161,149 @@ function RecordPaymentDialog({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="amount">Amount (UGX)</Label>
+                                <Label htmlFor="amount">
+                                    Total received (UGX)
+                                </Label>
                                 <Input
                                     id="amount"
                                     name="amount"
                                     type="number"
                                     min={1}
+                                    step={1}
+                                    value={amount}
+                                    onChange={(event) => {
+                                        setAmount(event.target.value);
+                                        setAllocation('');
+                                        setSplitFee('');
+                                    }}
                                     required
                                 />
                                 <InputError message={errors.amount} />
                             </div>
+
+                            {member && (
+                                <div className="space-y-3 rounded-lg border bg-muted/30 p-3 text-sm">
+                                    <p>
+                                        {due > 0
+                                            ? `${member.contribution_due_period}: ${formatUgx(due)} outstanding.`
+                                            : 'No unpaid contribution month. This payment will be contribution advance credit.'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Based on verified payments. Pending
+                                        payments do not reduce this balance.
+                                        Contributions settle the oldest unpaid
+                                        month first.
+                                    </p>
+                                    <InputError
+                                        message={errors.contribution_due_amount}
+                                    />
+                                    {excess > 0 ? (
+                                        <>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="excess_allocation">
+                                                    Allocate the extra{' '}
+                                                    {formatUgx(excess)}
+                                                </Label>
+                                                <select
+                                                    id="excess_allocation"
+                                                    name="excess_allocation"
+                                                    value={allocation}
+                                                    onChange={(event) =>
+                                                        setAllocation(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                    className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+                                                >
+                                                    <option value="" disabled>
+                                                        Choose allocation
+                                                    </option>
+                                                    <option value="advance">
+                                                        Contribution advance
+                                                    </option>
+                                                    <option value="fees">
+                                                        Withdrawal fee
+                                                        contribution
+                                                    </option>
+                                                    <option
+                                                        value="split"
+                                                        disabled={excess < 2}
+                                                    >
+                                                        Split between advance
+                                                        and fees
+                                                    </option>
+                                                </select>
+                                                <InputError
+                                                    message={
+                                                        errors.excess_allocation
+                                                    }
+                                                />
+                                            </div>
+                                            {allocation === 'split' && (
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="withdrawal_fee_amount">
+                                                        Withdrawal fee portion
+                                                        (UGX)
+                                                    </Label>
+                                                    <Input
+                                                        id="withdrawal_fee_amount"
+                                                        name="withdrawal_fee_amount"
+                                                        type="number"
+                                                        min={1}
+                                                        max={excess - 1}
+                                                        step={1}
+                                                        value={splitFee}
+                                                        onChange={(event) =>
+                                                            setSplitFee(
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-muted-foreground">
+                                                Advance settles subsequent
+                                                unpaid months; any remainder is
+                                                held as credit. Fee
+                                                contributions are money
+                                                collected for charges, not
+                                                charges already spent.
+                                            </p>
+                                        </>
+                                    ) : received > 0 && due > 0 ? (
+                                        <p>
+                                            The full payment goes to
+                                            contributions. No withdrawal fee is
+                                            deducted.
+                                        </p>
+                                    ) : null}
+                                    <InputError
+                                        message={errors.withdrawal_fee_amount}
+                                    />
+                                    {received > 0 &&
+                                        (excess === 0 || allocation !== '') && (
+                                            <dl className="grid grid-cols-2 gap-2 border-t pt-3">
+                                                <dt>Contributions / advance</dt>
+                                                <dd className="text-right font-medium">
+                                                    {formatUgx(received - fee)}
+                                                </dd>
+                                                <dt>
+                                                    Withdrawal fees collected
+                                                </dt>
+                                                <dd className="text-right font-medium">
+                                                    {formatUgx(fee)}
+                                                </dd>
+                                                <dt>Total received</dt>
+                                                <dd className="text-right font-semibold">
+                                                    {formatUgx(received)}
+                                                </dd>
+                                            </dl>
+                                        )}
+                                </div>
+                            )}
 
                             <div className="grid gap-2">
                                 <Label htmlFor="paid_on">Paid on</Label>
@@ -349,7 +520,7 @@ export default function PaymentIndex({
 }: {
     payments: Paginated<PaymentRow>;
     filters: { search: string | null; status: string | null };
-    members: MemberOption[];
+    members: PaymentMemberOption[];
     statusOptions: Option[];
     methodOptions: Option[];
 }) {
@@ -362,10 +533,10 @@ export default function PaymentIndex({
                     <Heading
                         variant="small"
                         title="Payments"
-                        description="Recorded contributions awaiting or completed verification"
+                        description="Receipts with contributions, advances, and withdrawal fee collections"
                     />
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Button asChild variant="outline">
                             <a
                                 href={
@@ -408,7 +579,9 @@ export default function PaymentIndex({
                             <TableRow>
                                 <TableHead>Reference</TableHead>
                                 <TableHead>Member</TableHead>
-                                <TableHead>Amount</TableHead>
+                                <TableHead>
+                                    Total received / allocation
+                                </TableHead>
                                 <TableHead>Paid on</TableHead>
                                 <TableHead>Recorded by</TableHead>
                                 <TableHead>Evidence</TableHead>
@@ -425,6 +598,30 @@ export default function PaymentIndex({
                                     <TableCell>{payment.member_name}</TableCell>
                                     <TableCell>
                                         {formatUgx(payment.amount)}
+                                        <span className="block text-xs text-muted-foreground">
+                                            {formatUgx(
+                                                payment.contribution_amount,
+                                            )}{' '}
+                                            contributions / advance
+                                        </span>
+                                        {payment.withdrawal_fee_amount > 0 && (
+                                            <span className="block text-xs text-muted-foreground">
+                                                {formatUgx(
+                                                    payment.withdrawal_fee_amount,
+                                                )}{' '}
+                                                withdrawal fees
+                                            </span>
+                                        )}
+                                        {payment.status === 'submitted' &&
+                                            payment.contribution_due_amount !==
+                                                null && (
+                                                <span className="block text-xs text-muted-foreground">
+                                                    Starting month balance:{' '}
+                                                    {formatUgx(
+                                                        payment.contribution_due_amount,
+                                                    )}
+                                                </span>
+                                            )}
                                         {payment.unapplied_amount > 0 && (
                                             <span className="block text-xs text-muted-foreground">
                                                 {formatUgx(

@@ -55,7 +55,7 @@ import { index as userManagementIndex } from '@/routes/user-management';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { auth, tenant } = usePage().props;
-    const tenantLogoUrl = tenant.logo_url || '/musuwa_nation.jpeg';
+    const tenantLogoUrl = tenant.logo_url || '/musuwa_logo.jpeg';
 
     const isAdministrator = auth.roles.includes('administrator');
     const isSecretary = auth.roles.includes('secretary');

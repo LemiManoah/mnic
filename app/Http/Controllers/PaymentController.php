@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\GetPaymentContributionDue;
 use App\Actions\RecordPayment;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -22,7 +23,7 @@ use Inertia\Response;
 
 final readonly class PaymentController
 {
-    public function index(Request $request, #[CurrentUser] User $user): Response
+    public function index(Request $request, #[CurrentUser] User $user, GetPaymentContributionDue $getPaymentContributionDue): Response
     {
         Gate::authorize('viewAny', Payment::class);
 
@@ -46,6 +47,9 @@ final readonly class PaymentController
                 'id' => $payment->id,
                 'member_name' => $payment->member->full_name ?? __('Unknown member'),
                 'amount' => $payment->amount,
+                'withdrawal_fee_amount' => $payment->withdrawal_fee_amount,
+                'contribution_amount' => $payment->contributionAmount(),
+                'contribution_due_amount' => $payment->contribution_due_amount,
                 'unapplied_amount' => $payment->unapplied_amount,
                 'paid_on' => $payment->paid_on->toDateString(),
                 'method' => $payment->method,
@@ -79,8 +83,20 @@ final readonly class PaymentController
                 PaymentStatus::cases(),
             ),
             'members' => Member::query()
+                ->with('obligations.contributionPeriod')
                 ->orderBy('full_name')
-                ->get(['id', 'full_name', 'member_number']),
+                ->get(['id', 'full_name', 'member_number'])
+                ->map(function (Member $member) use ($getPaymentContributionDue): array {
+                    $due = $getPaymentContributionDue->handle($member);
+
+                    return [
+                        'id' => $member->id,
+                        'full_name' => $member->full_name,
+                        'member_number' => $member->member_number,
+                        'contribution_due_amount' => $due['amount'],
+                        'contribution_due_period' => $due['period'],
+                    ];
+                }),
             'methodOptions' => array_map(
                 static fn (PaymentMethod $method): array => [
                     'value' => $method->value,

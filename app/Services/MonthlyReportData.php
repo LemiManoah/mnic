@@ -52,11 +52,11 @@ final readonly class MonthlyReportData
             ->whereIn('status', [ObligationStatus::Unpaid->value, ObligationStatus::PartiallyPaid->value])
             ->whereColumn('amount_paid', '<', 'amount')
             ->get()
-            ->sortBy(fn (MemberObligation $obligation): string => $obligation->member?->full_name ?? '')
+            ->sortBy(fn (MemberObligation $obligation): string => $obligation->member->full_name ?? '')
             ->values()
             ->map(fn (MemberObligation $obligation): array => [
                 'member_id' => $obligation->member_id,
-                'member_name' => $obligation->member?->full_name ?? __('Unknown member'),
+                'member_name' => $obligation->member->full_name ?? __('Unknown member'),
                 'member_number' => $obligation->member?->member_number,
                 'amount' => $obligation->amount,
                 'amount_paid' => $obligation->amount_paid,
@@ -83,6 +83,7 @@ final readonly class MonthlyReportData
             'arrears' => $arrears,
             'cash' => [
                 'inflows' => $this->cashPosition->inflowsForPeriod($period),
+                'withdrawal_fees' => $this->cashPosition->withdrawalFeesForPeriod($period),
                 'outflows' => $this->cashPosition->outflowsForPeriod($period),
             ],
             // Approved corrections to this month, shown apart from the figures
@@ -121,6 +122,8 @@ final readonly class MonthlyReportData
                     'member_name' => $payment->member->full_name ?? __('Unknown member'),
                     'reference' => $payment->reference,
                     'amount' => $payment->amount,
+                    'withdrawal_fee_amount' => $payment->withdrawal_fee_amount,
+                    'contribution_amount' => $payment->contributionAmount(),
                     'paid_on' => $payment->paid_on->toDateString(),
                 ]),
             'expenses' => Expense::query()

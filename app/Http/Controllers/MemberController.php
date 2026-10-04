@@ -122,6 +122,8 @@ final readonly class MemberController
                 ->map(fn (Payment $payment): array => [
                     'id' => $payment->id,
                     'amount' => $payment->amount,
+                    'withdrawal_fee_amount' => $payment->withdrawal_fee_amount,
+                    'contribution_amount' => $payment->contributionAmount(),
                     'unapplied_amount' => $payment->unapplied_amount,
                     'paid_on' => $payment->paid_on->toDateString(),
                     'method' => $payment->method,

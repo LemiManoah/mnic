@@ -192,6 +192,9 @@ final readonly class ExportController
                 $payment->reference,
                 $payment->member?->full_name,
                 $payment->amount,
+                $payment->contributionAmount(),
+                $payment->withdrawal_fee_amount,
+                $payment->unapplied_amount,
                 $payment->paid_on->toDateString(),
                 $payment->method->label(),
                 $payment->recordedByMember?->full_name,
@@ -203,11 +206,11 @@ final readonly class ExportController
         return $report->render(
             $this->format($request),
             sprintf('verified-payments-%s', today()->toDateString()),
-            'Verified contributions',
+            'Verified receipts',
             sprintf('All verified payments as at %s', today()->toFormattedDateString()),
-            ['Reference', 'Member', 'Amount (UGX)', 'Paid on', 'Method', 'Recorded by', 'Verified by'],
+            ['Reference', 'Member', 'Received (UGX)', 'Contributions / advance (UGX)', 'Withdrawal fees (UGX)', 'Unapplied credit (UGX)', 'Paid on', 'Method', 'Recorded by', 'Verified by'],
             $rows,
-            [2],
+            [2, 3, 4, 5],
         );
     }
 

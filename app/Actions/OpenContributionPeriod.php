@@ -22,6 +22,7 @@ final readonly class OpenContributionPeriod
     public function __construct(
         private RecordAuditEvent $recordAuditEvent,
         private NotifyMembers $notifyMembers,
+        private ApplyMemberAdvances $applyMemberAdvances,
     ) {
         //
     }
@@ -54,6 +55,8 @@ final readonly class OpenContributionPeriod
 
             $activeMembers = Member::query()
                 ->where('status', MemberStatus::Active->value)
+                ->orderBy('id')
+                ->lockForUpdate()
                 ->get();
 
             foreach ($activeMembers as $member) {
@@ -64,6 +67,8 @@ final readonly class OpenContributionPeriod
                     'amount_paid' => 0,
                     'status' => ObligationStatus::Unpaid,
                 ]);
+
+                $this->applyMemberAdvances->handle($member, $actor, $ipAddress);
             }
 
             $this->recordAuditEvent->handle(

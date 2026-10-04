@@ -50,6 +50,15 @@ final readonly class ClubCashPosition
             ->sum('amount');
     }
 
+    public function withdrawalFeesForPeriod(ContributionPeriod $period): int
+    {
+        return (int) Payment::query()
+            ->where('status', PaymentStatus::Verified->value)
+            ->whereYear('paid_on', $period->year)
+            ->whereMonth('paid_on', $period->month)
+            ->sum('withdrawal_fee_amount');
+    }
+
     /**
      * Expenses actually paid out inside the given period's month.
      */

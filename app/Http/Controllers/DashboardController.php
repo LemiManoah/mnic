@@ -20,6 +20,7 @@ use App\Models\Reconciliation;
 use App\Models\User;
 use App\Services\ClubCashPosition;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -60,7 +61,7 @@ final readonly class DashboardController
                 'verified_total' => (int) Payment::query()
                     ->where('member_id', $member->id)
                     ->where('status', PaymentStatus::Verified->value)
-                    ->sum('amount'),
+                    ->sum(DB::raw('amount - withdrawal_fee_amount')),
                 'advance' => (int) Payment::query()
                     ->where('member_id', $member->id)
                     ->where('status', PaymentStatus::Verified->value)

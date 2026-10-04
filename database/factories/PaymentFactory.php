@@ -24,6 +24,8 @@ final class PaymentFactory extends Factory
             'member_id' => Member::factory(),
             'amount' => 60000,
             'unapplied_amount' => 0,
+            'withdrawal_fee_amount' => 0,
+            'contribution_due_amount' => null,
             'paid_on' => now()->toDateString(),
             'method' => PaymentMethod::MobileMoney,
             'reference' => fake()->unique()->bothify('MM-########'),

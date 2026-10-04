@@ -45,6 +45,7 @@ type ReportArrear = {
 
 type Cash = {
     inflows: number;
+    withdrawal_fees: number;
     outflows: number;
 };
 
@@ -63,6 +64,8 @@ type ReportPayment = {
     reference: string;
     amount: number;
     paid_on: string;
+    withdrawal_fee_amount: number;
+    contribution_amount: number;
 };
 
 type ReportExpense = {
@@ -161,53 +164,109 @@ export default function MonthlyReportShow({
                         value={formatUgx(contributions.outstanding)}
                     />
                     <Stat
-                        label={period.is_overdue ? 'Members in arrears' : 'Members with a balance'}
+                        label={
+                            period.is_overdue
+                                ? 'Members in arrears'
+                                : 'Members with a balance'
+                        }
                         value={String(contributions.members_in_arrears)}
                     />
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{period.is_overdue ? 'Members in arrears' : 'Outstanding contributions'}</CardTitle>
+                        <CardTitle>
+                            {period.is_overdue
+                                ? 'Members in arrears'
+                                : 'Outstanding contributions'}
+                        </CardTitle>
                         <p className="text-sm text-muted-foreground">
-                            Remaining contributions for {period.label}, including partial payments.
-                            {' '}Grace ends on {period.grace_ends_on}. Balances reflect verified payments to date.
+                            Remaining contributions for {period.label},
+                            including partial payments. Grace ends on{' '}
+                            {period.grace_ends_on}. Balances reflect verified
+                            payments to date.
                         </p>
                     </CardHeader>
                     <CardContent>
                         <div className="divide-y sm:hidden">
                             {arrears.map((member) => (
-                                <div key={member.member_id} className="space-y-2 py-3">
-                                    <div className="font-medium">{member.member_name}</div>
-                                    <div className="text-xs text-muted-foreground">{member.member_number}</div>
+                                <div
+                                    key={member.member_id}
+                                    className="space-y-2 py-3"
+                                >
+                                    <div className="font-medium">
+                                        {member.member_name}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {member.member_number}
+                                    </div>
                                     <dl className="grid grid-cols-2 gap-2 text-sm">
-                                        <div><dt className="text-muted-foreground">Paid</dt><dd>{formatUgx(member.amount_paid)}</dd></div>
-                                        <div><dt className="text-muted-foreground">Outstanding</dt><dd className="font-semibold">{formatUgx(member.outstanding)}</dd></div>
+                                        <div>
+                                            <dt className="text-muted-foreground">
+                                                Paid
+                                            </dt>
+                                            <dd>
+                                                {formatUgx(member.amount_paid)}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt className="text-muted-foreground">
+                                                Outstanding
+                                            </dt>
+                                            <dd className="font-semibold">
+                                                {formatUgx(member.outstanding)}
+                                            </dd>
+                                        </div>
                                     </dl>
                                 </div>
                             ))}
                         </div>
                         <div className="hidden sm:block">
                             <Table>
-                                <TableHeader><TableRow>
-                                    <TableHead>Member</TableHead>
-                                    <TableHead className="text-right">Expected</TableHead>
-                                    <TableHead className="text-right">Paid</TableHead>
-                                    <TableHead className="text-right">Outstanding</TableHead>
-                                </TableRow></TableHeader>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Member</TableHead>
+                                        <TableHead className="text-right">
+                                            Expected
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            Paid
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            Outstanding
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
                                 <TableBody>
                                     {arrears.map((member) => (
                                         <TableRow key={member.member_id}>
-                                            <TableCell><div className="font-medium">{member.member_name}</div><div className="text-xs text-muted-foreground">{member.member_number}</div></TableCell>
-                                            <TableCell className="text-right">{formatUgx(member.amount)}</TableCell>
-                                            <TableCell className="text-right">{formatUgx(member.amount_paid)}</TableCell>
-                                            <TableCell className="text-right font-semibold">{formatUgx(member.outstanding)}</TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">
+                                                    {member.member_name}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {member.member_number}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {formatUgx(member.amount)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {formatUgx(member.amount_paid)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-semibold">
+                                                {formatUgx(member.outstanding)}
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
                             </Table>
                         </div>
-                        {arrears.length === 0 && <p className="py-4 text-sm text-muted-foreground">No outstanding contributions for this period.</p>}
+                        {arrears.length === 0 && (
+                            <p className="py-4 text-sm text-muted-foreground">
+                                No outstanding contributions for this period.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -215,6 +274,14 @@ export default function MonthlyReportShow({
                     <Stat
                         label="Verified inflows"
                         value={formatUgx(cash.inflows)}
+                    />
+                    <Stat
+                        label="Contribution receipts / advance"
+                        value={formatUgx(cash.inflows - cash.withdrawal_fees)}
+                    />
+                    <Stat
+                        label="Withdrawal fees collected (included in inflows)"
+                        value={formatUgx(cash.withdrawal_fees)}
                     />
                     <Stat
                         label="Settled outflows"
@@ -303,8 +370,13 @@ export default function MonthlyReportShow({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Verified payments received this month</CardTitle>
-                        <p className="text-sm text-muted-foreground">Shown by payment date. A payment received this month may settle an earlier contribution period.</p>
+                        <CardTitle>
+                            Verified payments received this month
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                            Shown by payment date. A payment received this month
+                            may settle an earlier contribution period.
+                        </p>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
@@ -314,7 +386,9 @@ export default function MonthlyReportShow({
                                         <TableHead>Member</TableHead>
                                         <TableHead>Reference</TableHead>
                                         <TableHead>Paid on</TableHead>
-                                        <TableHead>Amount</TableHead>
+                                        <TableHead>
+                                            Total received / allocation
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -331,6 +405,18 @@ export default function MonthlyReportShow({
                                             </TableCell>
                                             <TableCell>
                                                 {formatUgx(payment.amount)}
+                                                <span className="block text-xs text-muted-foreground">
+                                                    Contributions / advance:{' '}
+                                                    {formatUgx(
+                                                        payment.contribution_amount,
+                                                    )}
+                                                </span>
+                                                <span className="block text-xs text-muted-foreground">
+                                                    Withdrawal fees:{' '}
+                                                    {formatUgx(
+                                                        payment.withdrawal_fee_amount,
+                                                    )}
+                                                </span>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -341,8 +427,8 @@ export default function MonthlyReportShow({
                                                 colSpan={4}
                                                 className="py-6 text-center text-muted-foreground"
                                             >
-                                                No verified payments received this
-                                                month.
+                                                No verified payments received
+                                                this month.
                                             </TableCell>
                                         </TableRow>
                                     )}

@@ -79,7 +79,7 @@ export default function Dashboard({
             headline: club.reconciled_to
                 ? `Reconciled to ${club.reconciled_to}`
                 : 'Not yet reconciled',
-            detail: 'Verified contributions less settled expenses',
+            detail: 'Verified receipts, including fee collections, less settled expenses',
         },
         {
             label: 'Verified inflows',

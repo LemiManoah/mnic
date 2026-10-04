@@ -38,7 +38,6 @@ it('denies a plain member from viewing the audit log', function (): void {
     $response->assertForbidden();
 });
 
-
 it('finds event codes using readable words', function (): void {
     $actor = memberWithRole(ClubRole::Secretary);
     AuditLog::factory()->create(['event' => 'action_item.created']);
@@ -46,6 +45,6 @@ it('finds event codes using readable words', function (): void {
 
     $this->actingAs($actor->user)->get(route('audit-log.index', ['search' => 'action item created']))
         ->assertOk()->assertInertia(fn ($page) => $page
-            ->has('auditLogs.data', 1)
-            ->where('auditLogs.data.0.event', 'action_item.created'));
+        ->has('auditLogs.data', 1)
+        ->where('auditLogs.data.0.event', 'action_item.created'));
 });

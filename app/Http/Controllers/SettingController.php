@@ -11,7 +11,7 @@ use App\Models\Setting;
 use App\Models\SettingVersion;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -25,7 +25,7 @@ final readonly class SettingController
 
         return Inertia::render('setting/index', [
             'settings' => Setting::query()->with([
-                'versions' => fn (HasMany $query): HasMany => $query->orderByDesc('effective_from')->latest(),
+                'versions' => fn (Relation $query): Relation => $query->orderByDesc('effective_from')->latest(),
             ])->get()->map(function (Setting $setting) use ($user): array {
                 $versions = $setting->versions;
 
