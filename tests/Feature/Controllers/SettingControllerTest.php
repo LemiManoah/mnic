@@ -27,6 +27,7 @@ it('lists settings with their current and historical versions', function (): voi
     $response->assertOk()
         ->assertInertia(fn ($page) => $page->component('setting/index')
             ->where('settings.0.current.value', '60000')
+            ->where('settings.0.can_update', false)
             ->has('settings.0.versions', 2));
 });
 
@@ -54,4 +55,35 @@ it('denies a non-administrator from updating a setting', function (): void {
     ]);
 
     $response->assertForbidden();
+});
+
+
+it('rejects invalid numeric club settings', function (string $key, string $value): void {
+    $actor = memberWithRole(ClubRole::Administrator);
+    $setting = Setting::factory()->create(['key' => $key]);
+
+    $this->actingAs($actor->user)->put(route('setting.update', $setting), [
+        'value' => $value,
+        'effective_from' => now()->toDateString(),
+    ])->assertSessionHasErrors('value');
+
+    expect($setting->versions()->count())->toBe(0);
+})->with([
+    ['contribution_amount', 'not a number'],
+    ['contribution_amount', '0'],
+    ['due_day', '0'],
+    ['due_day', '31'],
+    ['grace_day', '29'],
+    ['approval_percent', '101'],
+    ['quorum_percent', '0'],
+]);
+
+it('allows an administrator to see setting controls', function (): void {
+    $actor = memberWithRole(ClubRole::Administrator);
+    Setting::factory()->create();
+
+    $this->actingAs($actor->user)->get(route('setting.index'))
+        ->assertOk()->assertInertia(fn ($page) => $page
+            ->where('today', now()->toDateString())
+            ->where('settings.0.can_update', true));
 });

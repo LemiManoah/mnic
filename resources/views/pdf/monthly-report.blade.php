@@ -31,9 +31,29 @@
             </td>
         </tr>
         <tr>
-            <td>Members in arrears</td>
+            <td>{{ $period['is_overdue'] ? 'Members in arrears' : 'Members with a balance' }}</td>
             <td class="num">{{ $contributions['members_in_arrears'] }}</td>
         </tr>
+    </table>
+
+    <h2>{{ $period['is_overdue'] ? 'Members in arrears' : 'Outstanding contributions' }}</h2>
+    <p>Balances for {{ $period['label'] }} reflect verified payments to date. Grace ends on {{ $period['grace_ends_on'] }}.</p>
+    <table class="data">
+        <thead>
+            <tr><th>Member</th><th class="num">Expected</th><th class="num">Paid</th><th class="num">Outstanding</th></tr>
+        </thead>
+        <tbody>
+            @forelse ($arrears as $member)
+                <tr>
+                    <td>{{ $member['member_name'] }}<br>{{ $member['member_number'] }}</td>
+                    <td class="num">{{ number_format($member['amount']) }}</td>
+                    <td class="num">{{ number_format($member['amount_paid']) }}</td>
+                    <td class="num">{{ number_format($member['outstanding']) }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="4">No outstanding contributions for this period.</td></tr>
+            @endforelse
+        </tbody>
     </table>
 
     <h2>Cash movement</h2>
@@ -85,8 +105,8 @@
     @if ($adjustments->isNotEmpty())
         <h2>Corrections after this month closed</h2>
 
-        <p>The figures above are the ones the club signed off and have not been
-            changed. These corrections were approved afterwards by two officers.</p>
+        <p>These corrections were approved after the period closed. Contribution balances
+            above remain live and can change when later payments are verified.</p>
 
         <table class="data">
             <thead>
@@ -110,7 +130,8 @@
         </table>
     @endif
 
-    <h2>Verified contributions</h2>
+    <h2>Verified payments received this month</h2>
+    <p>Payments are shown by payment date and may settle earlier contribution periods.</p>
 
     <table class="data">
         <thead>
@@ -132,7 +153,7 @@
             @endforeach
 
             @if ($payments->isEmpty())
-                <tr><td colspan="4">No verified contributions this month.</td></tr>
+                <tr><td colspan="4">No verified payments received this month.</td></tr>
             @endif
         </tbody>
     </table>
@@ -166,7 +187,6 @@
 @endsection
 
 @section('note')
-    Amounts are in Ugandan shillings. Contributions count only once a second
-    officer has verified them, and expenses only once they have been approved,
-    paid and verified.
+    Amounts are in Ugandan shillings. Contribution totals use verified payments.
+    Settled outflows include paid expenses awaiting verification.
 @endsection

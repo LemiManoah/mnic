@@ -22,6 +22,8 @@ type ReportPeriod = {
     id: string;
     label: string;
     due_date: string;
+    grace_ends_on: string;
+    is_overdue: boolean;
     status: ContributionPeriodStatus;
 };
 
@@ -30,6 +32,15 @@ type Contributions = {
     collected: number;
     outstanding: number;
     members_in_arrears: number;
+};
+
+type ReportArrear = {
+    member_id: string;
+    member_name: string;
+    member_number: string | null;
+    amount: number;
+    amount_paid: number;
+    outstanding: number;
 };
 
 type Cash = {
@@ -88,6 +99,7 @@ type ReportAdjustment = {
 export default function MonthlyReportShow({
     period,
     contributions,
+    arrears,
     cash,
     reconciliation,
     adjustments,
@@ -96,6 +108,7 @@ export default function MonthlyReportShow({
 }: {
     period: ReportPeriod;
     contributions: Contributions;
+    arrears: ReportArrear[];
     cash: Cash;
     reconciliation: ReconciliationSummary | null;
     adjustments: ReportAdjustment[];
@@ -117,7 +130,7 @@ export default function MonthlyReportShow({
                         title={`Monthly report ${period.label}`}
                         description={`Contributions due ${period.due_date}`}
                     />
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         {reconciliation?.is_confirmed ? (
                             <Badge>Reconciliation confirmed</Badge>
                         ) : (
@@ -148,10 +161,55 @@ export default function MonthlyReportShow({
                         value={formatUgx(contributions.outstanding)}
                     />
                     <Stat
-                        label="Members in arrears"
+                        label={period.is_overdue ? 'Members in arrears' : 'Members with a balance'}
                         value={String(contributions.members_in_arrears)}
                     />
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{period.is_overdue ? 'Members in arrears' : 'Outstanding contributions'}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                            Remaining contributions for {period.label}, including partial payments.
+                            {' '}Grace ends on {period.grace_ends_on}. Balances reflect verified payments to date.
+                        </p>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="divide-y sm:hidden">
+                            {arrears.map((member) => (
+                                <div key={member.member_id} className="space-y-2 py-3">
+                                    <div className="font-medium">{member.member_name}</div>
+                                    <div className="text-xs text-muted-foreground">{member.member_number}</div>
+                                    <dl className="grid grid-cols-2 gap-2 text-sm">
+                                        <div><dt className="text-muted-foreground">Paid</dt><dd>{formatUgx(member.amount_paid)}</dd></div>
+                                        <div><dt className="text-muted-foreground">Outstanding</dt><dd className="font-semibold">{formatUgx(member.outstanding)}</dd></div>
+                                    </dl>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="hidden sm:block">
+                            <Table>
+                                <TableHeader><TableRow>
+                                    <TableHead>Member</TableHead>
+                                    <TableHead className="text-right">Expected</TableHead>
+                                    <TableHead className="text-right">Paid</TableHead>
+                                    <TableHead className="text-right">Outstanding</TableHead>
+                                </TableRow></TableHeader>
+                                <TableBody>
+                                    {arrears.map((member) => (
+                                        <TableRow key={member.member_id}>
+                                            <TableCell><div className="font-medium">{member.member_name}</div><div className="text-xs text-muted-foreground">{member.member_number}</div></TableCell>
+                                            <TableCell className="text-right">{formatUgx(member.amount)}</TableCell>
+                                            <TableCell className="text-right">{formatUgx(member.amount_paid)}</TableCell>
+                                            <TableCell className="text-right font-semibold">{formatUgx(member.outstanding)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        {arrears.length === 0 && <p className="py-4 text-sm text-muted-foreground">No outstanding contributions for this period.</p>}
+                    </CardContent>
+                </Card>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Stat
@@ -210,9 +268,9 @@ export default function MonthlyReportShow({
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
                             <p className="text-muted-foreground">
-                                The figures above are the ones the club signed
-                                off and have not been changed. These corrections
-                                were approved afterwards by two officers.
+                                These corrections were approved after the period
+                                closed. Contribution balances above remain live
+                                and can change when later payments are verified.
                             </p>
 
                             {adjustments.map((adjustment) => (
@@ -245,7 +303,8 @@ export default function MonthlyReportShow({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Verified contributions</CardTitle>
+                        <CardTitle>Verified payments received this month</CardTitle>
+                        <p className="text-sm text-muted-foreground">Shown by payment date. A payment received this month may settle an earlier contribution period.</p>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
@@ -282,8 +341,8 @@ export default function MonthlyReportShow({
                                                 colSpan={4}
                                                 className="py-6 text-center text-muted-foreground"
                                             >
-                                                No verified contributions this
-                                                period.
+                                                No verified payments received this
+                                                month.
                                             </TableCell>
                                         </TableRow>
                                     )}

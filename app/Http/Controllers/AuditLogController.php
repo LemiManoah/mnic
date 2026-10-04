@@ -18,6 +18,7 @@ final readonly class AuditLogController
         Gate::authorize('viewAny', AuditLog::class);
 
         $search = $request->string('search')->trim()->value();
+        $eventSearch = str($search)->replaceMatches('/\s+/', '%')->value();
         $event = $request->string('event')->value();
 
         return Inertia::render('audit-log/index', [
@@ -25,7 +26,7 @@ final readonly class AuditLogController
                 ->with('actorMember')
                 ->when($search !== '', fn (Builder $query): Builder => $query
                     ->where(fn (Builder $inner): Builder => $inner
-                        ->where('event', 'like', sprintf('%%%s%%', $search))
+                        ->where('event', 'like', sprintf('%%%s%%', $eventSearch))
                         ->orWhere('auditable_type', 'like', sprintf('%%%s%%', $search))
                         ->orWhereHas('actorMember', fn (Builder $member): Builder => $member
                             ->where('full_name', 'like', sprintf('%%%s%%', $search)))))

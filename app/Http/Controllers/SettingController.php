@@ -8,8 +8,10 @@ use App\Actions\UpdateSetting;
 use App\Http\Requests\UpdateSettingRequest;
 use App\Models\Member;
 use App\Models\Setting;
+use App\Models\SettingVersion;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -17,15 +19,15 @@ use Inertia\Response;
 
 final readonly class SettingController
 {
-    public function index(): Response
+    public function index(#[CurrentUser] User $user): Response
     {
         Gate::authorize('viewAny', Setting::class);
 
         return Inertia::render('setting/index', [
-            'settings' => Setting::query()->get()->map(function (Setting $setting): array {
-                $versions = $setting->versions()
-                    ->orderByDesc('effective_from')->latest()
-                    ->get();
+            'settings' => Setting::query()->with([
+                'versions' => fn (HasMany $query): HasMany => $query->orderByDesc('effective_from')->latest(),
+            ])->get()->map(function (Setting $setting) use ($user): array {
+                $versions = $setting->versions;
 
                 $today = now()->toDateString();
 
@@ -34,10 +36,12 @@ final readonly class SettingController
                     'key' => $setting->key,
                     'label' => $setting->label,
                     'type' => $setting->type,
-                    'current' => $versions->first(fn (mixed $version): bool => $version->effective_from->toDateString() <= $today),
+                    'can_update' => $user->can('update', $setting),
+                    'current' => $versions->first(fn (SettingVersion $version): bool => $version->effective_from->toDateString() <= $today),
                     'versions' => $versions,
                 ];
             }),
+            'today' => now()->toDateString(),
         ]);
     }
 

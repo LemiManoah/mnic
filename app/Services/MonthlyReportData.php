@@ -47,11 +47,29 @@ final readonly class MonthlyReportData
                 ObligationStatus::Cancelled->value,
             ]);
 
+        $arrears = (clone $activeObligations)
+            ->with('member')
+            ->whereIn('status', [ObligationStatus::Unpaid->value, ObligationStatus::PartiallyPaid->value])
+            ->whereColumn('amount_paid', '<', 'amount')
+            ->get()
+            ->sortBy(fn (MemberObligation $obligation): string => $obligation->member?->full_name ?? '')
+            ->values()
+            ->map(fn (MemberObligation $obligation): array => [
+                'member_id' => $obligation->member_id,
+                'member_name' => $obligation->member?->full_name ?? __('Unknown member'),
+                'member_number' => $obligation->member?->member_number,
+                'amount' => $obligation->amount,
+                'amount_paid' => $obligation->amount_paid,
+                'outstanding' => $obligation->outstanding(),
+            ]);
+
         return [
             'period' => [
                 'id' => $period->id,
                 'label' => $period->label(),
                 'due_date' => $period->due_date->toDateString(),
+                'grace_ends_on' => $period->grace_ends_on->toDateString(),
+                'is_overdue' => $period->grace_ends_on->toDateString() < now()->toDateString(),
                 'status' => $period->status,
             ],
             'contributions' => [
@@ -60,14 +78,9 @@ final readonly class MonthlyReportData
                 'outstanding' => (int) (clone $activeObligations)
                     ->get()
                     ->sum(fn (MemberObligation $obligation): int => $obligation->outstanding()),
-                'members_in_arrears' => MemberObligation::query()
-                    ->where('contribution_period_id', $period->id)
-                    ->whereIn('status', [
-                        ObligationStatus::Unpaid->value,
-                        ObligationStatus::PartiallyPaid->value,
-                    ])
-                    ->count(),
+                'members_in_arrears' => $arrears->count(),
             ],
+            'arrears' => $arrears,
             'cash' => [
                 'inflows' => $this->cashPosition->inflowsForPeriod($period),
                 'outflows' => $this->cashPosition->outflowsForPeriod($period),

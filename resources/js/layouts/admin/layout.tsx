@@ -8,8 +8,8 @@ import type { PropsWithChildren } from 'react';
  */
 export default function AdminLayout({ children }: PropsWithChildren) {
     return (
-        <div className="px-4 py-6">
-            <section className="mx-auto w-full max-w-5xl space-y-6">
+        <div className="min-w-0 px-4 py-6">
+            <section className="mx-auto min-w-0 w-full max-w-5xl space-y-6">
                 {children}
             </section>
         </div>

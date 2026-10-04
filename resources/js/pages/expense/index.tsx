@@ -72,7 +72,7 @@ function RequestExpenseDialog({
                 <Button>Request expense</Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="min-w-0 p-4 sm:max-w-lg sm:p-6">
                 <DialogHeader>
                     <DialogTitle>Request expense</DialogTitle>
                     <DialogDescription>
@@ -86,7 +86,7 @@ function RequestExpenseDialog({
                     options={{ preserveScroll: true }}
                     onSuccess={() => setOpen(false)}
                     resetOnSuccess
-                    className="space-y-4"
+                    className="grid min-w-0 gap-4 sm:grid-cols-2"
                 >
                     {({ processing, errors }) => (
                         <>
@@ -184,7 +184,7 @@ function RequestExpenseDialog({
                                 <InputError message={errors.evidence} />
                             </div>
 
-                            <DialogFooter>
+                            <DialogFooter className="col-span-full mt-2">
                                 <Button
                                     type="button"
                                     variant="outline"

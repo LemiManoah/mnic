@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/layouts/admin/layout';
 import AppLayout from '@/layouts/app-layout';
 import { formatUgx } from '@/lib/money';
+import { readableAuditLabel } from '@/lib/audit';
+import { formatClubDateTime } from '@/lib/date';
 import { memberStatement, memberStatementPdf } from '@/routes/export';
 import {
     edit as editMember,
@@ -101,7 +103,7 @@ export default function MemberShow({
 
             <AdminLayout>
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 flex-wrap items-center gap-3">
                         <Heading
                             variant="small"
                             title={member.full_name}
@@ -112,7 +114,7 @@ export default function MemberShow({
                         </Badge>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {/* A plain anchor, not Inertia's Link: this returns a
                             file download rather than a page. */}
                         <Button asChild variant="outline">
@@ -135,18 +137,26 @@ export default function MemberShow({
                     </div>
                 </div>
 
-                <Tabs defaultValue="overview">
-                    <TabsList>
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="contributions">
-                            Contributions
-                        </TabsTrigger>
-                        <TabsTrigger value="status">Status history</TabsTrigger>
-                        <TabsTrigger value="access">Access</TabsTrigger>
-                        {canViewActivity && (
-                            <TabsTrigger value="activity">Activity</TabsTrigger>
-                        )}
-                    </TabsList>
+                <Tabs defaultValue="overview" className="min-w-0">
+                    <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-2">
+                        <TabsList
+                            aria-label="Member profile sections"
+                            className="min-w-max group-data-[orientation=horizontal]/tabs:h-11"
+                        >
+                            <TabsTrigger value="overview">Overview</TabsTrigger>
+                            <TabsTrigger value="contributions">
+                                Contributions
+                            </TabsTrigger>
+                            <TabsTrigger value="status">Status history</TabsTrigger>
+                            <TabsTrigger value="access">Access</TabsTrigger>
+                            {canViewActivity && (
+                                <TabsTrigger value="activity">Activity</TabsTrigger>
+                            )}
+                        </TabsList>
+                    </div>
+                    <p className="text-xs text-muted-foreground sm:hidden">
+                        Swipe the tabs to see all sections.
+                    </p>
 
                     <TabsContent value="overview">
                         <Card>
@@ -474,13 +484,10 @@ export default function MemberShow({
                                                 {auditLogs.map((log) => (
                                                     <TableRow key={log.id}>
                                                         <TableCell className="whitespace-nowrap text-muted-foreground">
-                                                            {log.created_at.slice(
-                                                                0,
-                                                                10,
-                                                            )}
+                                                            {formatClubDateTime(log.created_at)}
                                                         </TableCell>
                                                         <TableCell>
-                                                            {log.event}
+                                                            {readableAuditLabel(log.event)}
                                                         </TableCell>
                                                         <TableCell>
                                                             {log.actor_member

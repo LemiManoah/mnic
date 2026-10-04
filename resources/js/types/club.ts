@@ -363,6 +363,7 @@ export type SettingWithVersions = {
     key: string;
     label: string;
     type: SettingValueType;
+    can_update: boolean;
     current: SettingVersion | null;
     versions: SettingVersion[];
 };

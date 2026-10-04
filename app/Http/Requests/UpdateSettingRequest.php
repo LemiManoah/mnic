@@ -23,8 +23,18 @@ final class UpdateSettingRequest extends FormRequest
      */
     public function rules(): array
     {
+        $setting = $this->route('setting');
+        assert($setting instanceof Setting);
+
+        $valueRules = match ($setting->key) {
+            'contribution_amount' => ['required', 'integer', 'min:1'],
+            'due_day', 'grace_day' => ['required', 'integer', 'between:1,28'],
+            'quorum_percent', 'approval_percent' => ['required', 'integer', 'between:1,100'],
+            default => ['required', 'string', 'max:255'],
+        };
+
         return [
-            'value' => ['required', 'string', 'max:255'],
+            'value' => $valueRules,
             'effective_from' => ['required', 'date'],
         ];
     }
