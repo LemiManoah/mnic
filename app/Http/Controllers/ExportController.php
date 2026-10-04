@@ -21,6 +21,7 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Lang;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -207,13 +208,13 @@ final readonly class ExportController
         $rows = array_merge($rows, OpeningWithdrawalFee::query()->oldest('paid_on')->get()
             ->map(fn (OpeningWithdrawalFee $receipt): array => [
                 $receipt->reference,
-                __('Unallocated opening withdrawal fee'),
+                Lang::string('Unallocated opening withdrawal fee'),
                 $receipt->amount,
                 0,
                 $receipt->amount,
                 0,
                 $receipt->paid_on->toDateString(),
-                __('Mobile Money'),
+                Lang::string('Mobile Money'),
                 null,
                 null,
             ])->all());

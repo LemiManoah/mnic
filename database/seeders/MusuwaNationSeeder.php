@@ -43,7 +43,7 @@ final class MusuwaNationSeeder extends Seeder
 
     /** @var array<int, int> */
     private const array AUGUST_CONTRIBUTIONS = [
-        1 => 60000, 2 => 60000, 3 => 60000, 4 => 60000,
+        1 => 60000, 2 => 60000, 3 => 60000, 4 => 60000, 5 => 60000,
         6 => 60000, 7 => 60000, 8 => 60000, 10 => 60000,
         11 => 60000, 12 => 60000, 13 => 60000, 15 => 45000,
         17 => 60000, 18 => 60000, 19 => 60000, 20 => 60000,
@@ -186,7 +186,8 @@ final class MusuwaNationSeeder extends Seeder
 
                 $user->assignRole(($definition['role'] ?? ClubRole::Member)->value);
             } else {
-                $before = [...$member->toArray(), 'member_number' => $this->originalNumbers[$sequence]];
+                $originalNumber = $this->originalNumbers[$sequence] ?? throw new RuntimeException('Missing original member number during opening roll update.');
+                $before = [...$member->toArray(), 'member_number' => $originalNumber];
                 $member->update(['member_number' => $memberNumber, 'full_name' => $definition['name'], 'user_id' => $user->id]);
                 if ($member->wasChanged(['member_number', 'full_name', 'user_id'])) {
                     resolve(RecordAuditEvent::class)->handle('member.opening_roll_updated', $member, null, $before, $member->toArray());
@@ -242,7 +243,7 @@ final class MusuwaNationSeeder extends Seeder
                 'method' => PaymentMethod::MobileMoney,
                 'reference' => $reference,
                 'status' => PaymentStatus::Verified,
-                'notes' => 'August opening contribution imported from the report dated 1 September 2026 and member-owner corrections. August 31 is an accounting date, not a known transaction date. Reference is an import identifier, not a Mobile Money receipt. Trevor and James later cleared August. Individual transaction dates and verification officers were not supplied. The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.',
+                'notes' => 'August opening contribution imported from the report dated 1 September 2026 and member-owner corrections. August 31 is an accounting date, not a known transaction date. Reference is an import identifier, not a Mobile Money receipt. Trevor, James, and Namara Honest later cleared August. Individual transaction dates and verification officers were not supplied. The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.',
             ]);
 
             PaymentAllocation::query()->create([
@@ -269,7 +270,7 @@ final class MusuwaNationSeeder extends Seeder
                 'contribution_period_id' => $period->id,
                 'amount' => 20295,
                 'paid_on' => '2026-08-31',
-                'notes' => 'Aggregate withdrawal fee received through Mobile Money by Lubega James, from the report dated 1 September 2026. Individual member allocations and actual payment dates were not supplied. August 31 is an accounting date. This is money received, not an expense. No additional fees are assumed for Trevor or James later clearing August.',
+                'notes' => 'Aggregate withdrawal fee received through Mobile Money by Lubega James, from the report dated 1 September 2026. Individual member allocations and actual payment dates were not supplied. August 31 is an accounting date. This is money received, not an expense. No additional fees are assumed for Trevor, James, or Namara Honest later clearing August.',
             ],
         );
 

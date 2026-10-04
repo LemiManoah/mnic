@@ -144,8 +144,8 @@ it('is idempotent and preserves later membership and contribution changes', func
         ->and(PositionHolding::query()->count())->toBe(10)
         ->and(ContributionPeriod::query()->count())->toBe(3)
         ->and(MemberObligation::query()->count())->toBe(60)
-        ->and(Payment::query()->count())->toBe(16)
-        ->and(PaymentAllocation::query()->count())->toBe(16)
+        ->and(Payment::query()->count())->toBe(17)
+        ->and(PaymentAllocation::query()->count())->toBe(17)
         ->and($member->fresh()->phone)->toBe('+256771234567')
         ->and($member->fresh()->position)->toBeNull()
         ->and($obligation->fresh()->amount_paid)->toBe(15000);
@@ -154,16 +154,16 @@ it('is idempotent and preserves later membership and contribution changes', func
 it('imports the corrected August total without counting withdrawal charges as contributions', function (): void {
     $august = MemberObligation::query()->whereHas('contributionPeriod', fn ($query) => $query->where('month', 8))->get();
 
-    expect(Payment::query()->count())->toBe(16)
-        ->and(Payment::query()->sum('amount'))->toBe(945000)
+    expect(Payment::query()->count())->toBe(17)
+        ->and(Payment::query()->sum('amount'))->toBe(1005000)
         ->and(Payment::query()->sum('unapplied_amount'))->toBe(0)
-        ->and(PaymentAllocation::query()->sum('amount'))->toBe(945000)
-        ->and($august->sum('amount') - $august->sum('amount_paid'))->toBe(255000)
-        ->and($august->where('status', ObligationStatus::Paid))->toHaveCount(15)
-        ->and($august->where('status', ObligationStatus::Unpaid))->toHaveCount(4)
+        ->and(PaymentAllocation::query()->sum('amount'))->toBe(1005000)
+        ->and($august->sum('amount') - $august->sum('amount_paid'))->toBe(195000)
+        ->and($august->where('status', ObligationStatus::Paid))->toHaveCount(16)
+        ->and($august->where('status', ObligationStatus::Unpaid))->toHaveCount(3)
         ->and($august->where('status', ObligationStatus::PartiallyPaid))->toHaveCount(1);
 
-    foreach (['Turyakira Trevor', 'Lubega James Benjamin', 'Ssegawa Kibombo'] as $name) {
+    foreach (['Turyakira Trevor', 'Lubega James Benjamin', 'Ssegawa Kibombo', 'Namara Honest'] as $name) {
         $member = Member::query()->where('full_name', $name)->firstOrFail();
         expect($august->firstWhere('member_id', $member->id)?->amount_paid)->toBe(60000);
     }
@@ -184,7 +184,7 @@ it('refuses to mix the opening import with old demo history', function (): void 
     ContributionPeriod::factory()->create(['year' => 2026, 'month' => 1]);
 
     expect(fn () => $this->seed(MusuwaNationSeeder::class))->toThrow(RuntimeException::class, 'Existing pre-August or demo history')
-        ->and(Payment::query()->sum('amount'))->toBe(945000);
+        ->and(Payment::query()->sum('amount'))->toBe(1005000);
 });
 
 it('keeps imported reversals from being silently reapplied on a rerun', function (): void {
@@ -194,7 +194,7 @@ it('keeps imported reversals from being silently reapplied on a rerun', function
     $this->seed(MusuwaNationSeeder::class);
 
     expect($payment->fresh()->status)->toBe(PaymentStatus::Reversed)
-        ->and(Payment::query()->count())->toBe(16);
+        ->and(Payment::query()->count())->toBe(17);
 });
 
 it('allows a seeded member to sign in and requires email verification', function (): void {
@@ -231,7 +231,7 @@ it('uses the supplied name tag numbers and preserves identities when renumbering
 
     expect(Member::query()->pluck('user_id', 'id')->all())->toEqual($userIds)
         ->and(Payment::query()->pluck('member_id', 'reference')->all())->toEqual($paymentOwners)
-        ->and(Payment::query()->count())->toBe(16)
+        ->and(Payment::query()->count())->toBe(17)
         ->and(OpeningWithdrawalFee::query()->count())->toBe(1);
 });
 
@@ -242,12 +242,12 @@ it('imports the aggregate fee once without attributing it to a member', function
 
     expect(OpeningWithdrawalFee::query()->sole()->amount)->toBe(20295)
         ->and(Payment::query()->sum('withdrawal_fee_amount'))->toBe(0)
-        ->and(PaymentAllocation::query()->sum('amount'))->toBe(945000)
-        ->and(resolve(ClubCashPosition::class)->verifiedInflows())->toBe(965295)
-        ->and($report['cash']['inflows'])->toBe(965295)
+        ->and(PaymentAllocation::query()->sum('amount'))->toBe(1005000)
+        ->and(resolve(ClubCashPosition::class)->verifiedInflows())->toBe(1025295)
+        ->and($report['cash']['inflows'])->toBe(1025295)
         ->and($report['cash']['withdrawal_fees'])->toBe(20295)
-        ->and($report['contributions']['collected'])->toBe(945000)
-        ->and($report['payments']->sum('amount'))->toBe(965295);
+        ->and($report['contributions']['collected'])->toBe(1005000)
+        ->and($report['payments']->sum('amount'))->toBe(1025295);
 });
 
 it('refuses to take a requested number from an unrelated member', function (): void {
@@ -259,4 +259,19 @@ it('refuses to take a requested number from an unrelated member', function (): v
     expect(fn () => $this->seed(MusuwaNationSeeder::class))->toThrow(RuntimeException::class, 'unrelated member')
         ->and($member->fresh()->member_number)->toBe('TEMP-001')
         ->and($outsider->fresh()->member_number)->toBe('001');
+});
+
+
+it('imports Namara Honest August payment once against member 011 without a fee', function (): void {
+    $member = Member::query()->where('member_number', '011')->firstOrFail();
+    $payment = Payment::query()->where('reference', 'OPENING-202608-MN-0005')->sole();
+
+    $this->seed(MusuwaNationSeeder::class);
+
+    expect($member->full_name)->toBe('Namara Honest')
+        ->and($payment->member_id)->toBe($member->id)
+        ->and($payment->amount)->toBe(60000)
+        ->and($payment->withdrawal_fee_amount)->toBe(0)
+        ->and($payment->allocations()->sum('amount'))->toBe(60000)
+        ->and(Payment::query()->where('reference', $payment->reference)->count())->toBe(1);
 });
