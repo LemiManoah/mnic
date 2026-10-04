@@ -272,15 +272,15 @@ export default function MonthlyReportShow({
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Stat
-                        label="Verified inflows"
+                        label="Total money received"
                         value={formatUgx(cash.inflows)}
                     />
                     <Stat
-                        label="Contribution receipts / advance"
+                        label="Contributions and advances received"
                         value={formatUgx(cash.inflows - cash.withdrawal_fees)}
                     />
                     <Stat
-                        label="Withdrawal fees collected (included in inflows)"
+                        label="Withdrawal fees received"
                         value={formatUgx(cash.withdrawal_fees)}
                     />
                     <Stat
@@ -387,7 +387,7 @@ export default function MonthlyReportShow({
                                         <TableHead>Reference</TableHead>
                                         <TableHead>Paid on</TableHead>
                                         <TableHead>
-                                            Total received / allocation
+                                            Amount received
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -405,18 +405,6 @@ export default function MonthlyReportShow({
                                             </TableCell>
                                             <TableCell>
                                                 {formatUgx(payment.amount)}
-                                                <span className="block text-xs text-muted-foreground">
-                                                    Contributions / advance:{' '}
-                                                    {formatUgx(
-                                                        payment.contribution_amount,
-                                                    )}
-                                                </span>
-                                                <span className="block text-xs text-muted-foreground">
-                                                    Withdrawal fees:{' '}
-                                                    {formatUgx(
-                                                        payment.withdrawal_fee_amount,
-                                                    )}
-                                                </span>
                                             </TableCell>
                                         </TableRow>
                                     ))}

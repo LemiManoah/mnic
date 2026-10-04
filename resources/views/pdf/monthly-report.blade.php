@@ -60,15 +60,15 @@
 
     <table class="data">
         <tr>
-            <td>Total verified receipts (including fee collections)</td>
+            <td>Total money received</td>
             <td class="num">{{ number_format($cash['inflows']) }}</td>
         </tr>
         <tr>
-            <td>Of receipts: contributions / advance</td>
+            <td>Contributions and advances received</td>
             <td class="num">{{ number_format($cash['inflows'] - $cash['withdrawal_fees']) }}</td>
         </tr>
         <tr>
-            <td>Of receipts: withdrawal fees collected (included above)</td>
+            <td>Withdrawal fees received</td>
             <td class="num">{{ number_format($cash['withdrawal_fees']) }}</td>
         </tr>
         <tr>
@@ -156,7 +156,7 @@
                     <td>{{ $payment['member_name'] }}</td>
                     <td>{{ $payment['reference'] }}</td>
                     <td>{{ $payment['paid_on'] }}</td>
-                    <td class="num">{{ number_format($payment['amount']) }}<br><small>Contributions / advance: {{ number_format($payment['contribution_amount']) }}<br>Withdrawal fees: {{ number_format($payment['withdrawal_fee_amount']) }}</small></td>
+                    <td class="num">{{ number_format($payment['amount']) }}</td>
                 </tr>
             @endforeach
 
