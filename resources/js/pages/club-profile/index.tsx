@@ -1,4 +1,4 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { Download } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -158,18 +158,18 @@ export default function ClubProfileIndex({
                     </div>
                     <div className="flex gap-2">
                         <Button asChild variant="outline">
-                            <Link href={downloadClubProfile()}>
+                            <a href={downloadClubProfile().url} download="mnic-club-profile.pdf">
                                 <Download />
                                 Download PDF
-                            </Link>
+                            </a>
                         </Button>
                     </div>
                 </div>
 
                 <Form
+                    key={JSON.stringify(profile)}
                     {...updateClubProfile.form()}
                     options={{ preserveScroll: true }}
-                    resetOnSuccess
                     className="space-y-5"
                 >
                     {({ processing, errors, recentlySuccessful }) => (

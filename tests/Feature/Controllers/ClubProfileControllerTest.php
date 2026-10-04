@@ -34,6 +34,10 @@ it('allows administrators to update the club profile', function (): void {
         ->assertRedirectToRoute('club-profile.index');
 
     expect($profile->fresh()->content['purpose']['vision'])->toBe('An updated club vision.');
+
+    $this->actingAs($administrator->user)
+        ->get(route('club-profile.index'))
+        ->assertInertia(fn ($page) => $page->where('profile.purpose.vision', 'An updated club vision.'));
 });
 
 it('prevents ordinary members from editing the club profile', function (): void {
