@@ -134,6 +134,13 @@ export default function ContributionPeriodIndex({
     statusOptions: Option[];
     yearOptions: Option[];
 }) {
+    const periodLabel = (year: number, month: number) =>
+        new Intl.DateTimeFormat(undefined, {
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'UTC',
+        }).format(new Date(Date.UTC(year, month - 1, 1)));
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contribution periods" />
@@ -185,8 +192,7 @@ export default function ContributionPeriodIndex({
                             {periods.data.map((period) => (
                                 <TableRow key={period.id}>
                                     <TableCell className="font-medium">
-                                        {period.year}-
-                                        {String(period.month).padStart(2, '0')}
+                                        {periodLabel(period.year, period.month)}
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">
                                         {period.due_date.slice(0, 10)}

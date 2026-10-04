@@ -37,6 +37,7 @@ import { dashboard } from '@/routes';
 import { index as actionItemIndex } from '@/routes/action-item';
 import { index as auditLogIndex } from '@/routes/audit-log';
 import { index as contributionPeriodIndex } from '@/routes/contribution-period';
+import { index as clubProfileIndex } from '@/routes/club-profile';
 import { index as expenseIndex } from '@/routes/expense';
 import { index as externalAccountIndex } from '@/routes/external-account';
 import { index as meetingIndex } from '@/routes/meeting';
@@ -72,6 +73,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             badge: auth.unread_notifications,
         },
         { title: 'Members', url: memberIndex().url, icon: IconUsers },
+        {
+            title: 'Club profile',
+            url: clubProfileIndex().url,
+            icon: IconFileDescription,
+        },
         {
             title: 'Contribution periods',
             url: contributionPeriodIndex().url,

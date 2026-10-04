@@ -29,7 +29,7 @@ final readonly class PdfExport
 
         return Pdf::loadView($view, [
             ...$data,
-            'clubName' => config('app.tenant.name', config('app.name')),
+            'clubName' => $data['clubName'] ?? config('app.tenant.name', config('app.name')),
         ])
             ->setPaper('a4', $orientation)
             ->download($filename);

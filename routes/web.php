@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ActionItemController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\ClubProfileController;
 use App\Http\Controllers\ContributionPeriodController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseApprovalController;
@@ -66,6 +67,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 });
 
 Route::middleware('auth')->group(function (): void {
+    Route::get('club-profile', [ClubProfileController::class, 'index'])->name('club-profile.index');
+    Route::put('club-profile', [ClubProfileController::class, 'update'])->name('club-profile.update');
+    Route::get('club-profile/download', [ClubProfileController::class, 'download'])->name('club-profile.download');
+
     // Notifications — a member's own inbox, so no policy gate.
     Route::get('notifications', [NotificationController::class, 'index'])->name('notification.index');
     Route::post('notifications/read', [NotificationReadController::class, 'store'])->name('notification-read.store');

@@ -20,6 +20,19 @@ it('lists members for any authenticated member', function (): void {
         ->assertInertia(fn ($page) => $page->component('member/index'));
 });
 
+it('lists members in ascending member number order', function (): void {
+    $actor = memberWithRole(ClubRole::Member, ['member_number' => 'MN-0002']);
+    $later = Member::factory()->create(['member_number' => 'MN-0003']);
+    $earlier = Member::factory()->create(['member_number' => 'MN-0001']);
+
+    $this->actingAs($actor->user)->get(route('member.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('members.data.0.id', $earlier->id)
+            ->where('members.data.1.id', $actor->id)
+            ->where('members.data.2.id', $later->id));
+});
+
 it('shows a member profile to any authenticated member', function (): void {
     $actor = memberWithRole(ClubRole::Member);
     $member = memberWithRole(ClubRole::Treasurer, ['status' => MemberStatus::Active]);

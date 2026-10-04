@@ -42,7 +42,8 @@ final readonly class MemberController
                         ->orWhere('phone', 'like', sprintf('%%%s%%', $search))))
                 ->when($status !== '', fn (Builder $query): Builder => $query
                     ->where('status', $status))
-                ->latest()
+                ->orderBy('member_number')
+                ->orderBy('id')
                 ->paginate(20)
                 // Keep the filters on the pagination links, otherwise page two
                 // silently drops them.
