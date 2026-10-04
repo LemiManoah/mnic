@@ -6,10 +6,13 @@ namespace App\Http\Controllers;
 
 use App\Actions\GetPaymentContributionDue;
 use App\Actions\RecordPayment;
+use App\Enums\ContributionPeriodStatus;
+use App\Enums\ObligationStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Http\Requests\CreatePaymentRequest;
 use App\Models\Member;
+use App\Models\MemberObligation;
 use App\Models\Payment;
 use App\Models\PaymentEvidence;
 use App\Models\User;
@@ -31,7 +34,7 @@ final readonly class PaymentController
         $status = $request->string('status')->value();
 
         $payments = Payment::query()
-            ->with(['member', 'recordedByMember', 'reviewedByMember', 'reversalRequestedByMember', 'evidence'])
+            ->with(['contributionPeriod', 'member', 'recordedByMember', 'reviewedByMember', 'reversalRequestedByMember', 'evidence'])
             ->when($search !== '', fn (Builder $query): Builder => $query
                 ->where(fn (Builder $inner): Builder => $inner
                     ->where('reference', 'like', sprintf('%%%s%%', $search))
@@ -50,6 +53,7 @@ final readonly class PaymentController
                 'withdrawal_fee_amount' => $payment->withdrawal_fee_amount,
                 'contribution_amount' => $payment->contributionAmount(),
                 'contribution_due_amount' => $payment->contribution_due_amount,
+                'selected_period' => $payment->contributionPeriod?->label(),
                 'unapplied_amount' => $payment->unapplied_amount,
                 'paid_on' => $payment->paid_on->toDateString(),
                 'method' => $payment->method,
@@ -95,6 +99,15 @@ final readonly class PaymentController
                         'member_number' => $member->member_number,
                         'contribution_due_amount' => $due['amount'],
                         'contribution_due_period' => $due['period'],
+                        'periods' => $member->obligations
+                            ->filter(fn (MemberObligation $obligation): bool => $obligation->contributionPeriod?->status === ContributionPeriodStatus::Open && ! in_array($obligation->status, [ObligationStatus::Waived, ObligationStatus::Cancelled], true))
+                            ->sortBy(fn (MemberObligation $obligation): string => $obligation->contributionPeriod?->label() ?? '')
+                            ->values()
+                            ->map(fn (MemberObligation $obligation): array => [
+                                'id' => $obligation->contribution_period_id,
+                                'label' => $obligation->contributionPeriod?->label(),
+                                'outstanding' => $obligation->outstanding(),
+                            ]),
                     ];
                 }),
             'methodOptions' => array_map(

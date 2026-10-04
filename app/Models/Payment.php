@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property-read string $id
+ * @property-read string|null $contribution_period_id
  * @property-read string $member_id
  * @property-read int $withdrawal_fee_amount
  * @property-read int|null $contribution_due_amount
@@ -53,6 +54,7 @@ final class Payment extends Model
         return [
             'id' => 'string',
             'member_id' => 'string',
+            'contribution_period_id' => 'string',
             'amount' => 'integer',
             'withdrawal_fee_amount' => 'integer',
             'contribution_due_amount' => 'integer',
@@ -74,6 +76,12 @@ final class Payment extends Model
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
+    }
+
+    /** @return BelongsTo<ContributionPeriod, $this> */
+    public function contributionPeriod(): BelongsTo
+    {
+        return $this->belongsTo(ContributionPeriod::class);
     }
 
     public function contributionAmount(): int

@@ -16,12 +16,15 @@ use App\Models\Meeting;
 use App\Models\Member;
 use App\Models\MemberObligation;
 use App\Models\MembershipStatusHistory;
+use App\Models\OpeningWithdrawalFee;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\PositionHolding;
 use App\Models\PositionPoll;
 use App\Models\Proposal;
 use App\Models\User;
+use App\Services\ClubCashPosition;
+use App\Services\MonthlyReportData;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\MusuwaNationSeeder;
 use Illuminate\Support\Facades\Hash;
@@ -87,7 +90,7 @@ it('retains the existing officer assignments and member numbers', function (): v
         expect(Member::query()->where('full_name', $name)->firstOrFail()->currentPosition())->toBe($position);
     }
 
-    expect(Member::query()->where('full_name', 'Lemi Manoah')->firstOrFail()->member_number)->toBe('MN-0003')
+    expect(Member::query()->where('full_name', 'Lemi Manoah')->firstOrFail()->member_number)->toBe('003')
         ->and(User::query()->where('email', 'lemi.manoah@gmail.com')->firstOrFail()->hasRole(ClubRole::Administrator))->toBeTrue()
         ->and(PositionHolding::query()->count())->toBe(10);
 });
@@ -113,7 +116,7 @@ it('does not fabricate financial or governance history or send import notificati
 });
 
 it('updates legacy identities without changing member ownership or passwords', function (): void {
-    $member = Member::query()->where('member_number', 'MN-0001')->firstOrFail();
+    $member = Member::query()->where('member_number', '001')->firstOrFail();
     $user = $member->user;
     $user->forceFill(['name' => 'Fredrick Ssekweyama', 'email' => 'ssekweyama@gmail.com', 'password' => 'my-changed-password'])->save();
     $member->update(['full_name' => 'Fredrick Ssekweyama']);
@@ -127,7 +130,7 @@ it('updates legacy identities without changing member ownership or passwords', f
 });
 
 it('is idempotent and preserves later membership and contribution changes', function (): void {
-    $member = Member::query()->where('member_number', 'MN-0003')->firstOrFail();
+    $member = Member::query()->where('member_number', '003')->firstOrFail();
     $member->update(['phone' => '+256771234567', 'position' => null]);
 
     $obligation = MemberObligation::query()->whereHas('contributionPeriod', fn ($query) => $query->where('month', 9))->firstOrFail();
@@ -200,4 +203,60 @@ it('allows a seeded member to sign in and requires email verification', function
     $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('dashboard', absolute: false));
     $this->assertAuthenticatedAs($user);
     $this->get(route('dashboard'))->assertRedirect(route('verification.notice'));
+});
+
+it('uses the supplied name tag numbers and preserves identities when renumbering', function (): void {
+    $names = [
+        'Ssekweyama Fredrick', 'Lubega James Benjamin', 'Lemi Manoah', 'Tumwijukye Conrad',
+        'Tumwine John Esau', 'Feta Jeff Owen', 'Nuwagaba Michael Kanyima', 'Luate Simon Jackson',
+        'Ndagije Ronald', 'Ssegawa Kibombo', 'Namara Honest', 'Odongkara Fred Ojok',
+        'Rwothomio Paul', 'Turyakira Trevor', 'Nyero John', 'Musiimenta Alfred Marvin',
+        'Ariko Shaun Opio', 'Gimei Jude Tadeo', 'Ishimwe Mark', 'Kiwanuka Joseph',
+    ];
+    $members = Member::query()->get()->keyBy('full_name');
+    $paymentOwners = Payment::query()->pluck('member_id', 'reference')->all();
+    $userIds = Member::query()->pluck('user_id', 'id')->all();
+
+    foreach ($names as $index => $name) {
+        expect($members[$name]->member_number)->toBe(sprintf('%03d', $index + 1));
+        $members[$name]->update(['member_number' => sprintf('LEGACY-%03d', 20 - $index)]);
+    }
+
+    $this->seed(MusuwaNationSeeder::class);
+    $this->seed(MusuwaNationSeeder::class);
+
+    foreach ($names as $index => $name) {
+        expect($members[$name]->fresh()->member_number)->toBe(sprintf('%03d', $index + 1));
+    }
+
+    expect(Member::query()->pluck('user_id', 'id')->all())->toEqual($userIds)
+        ->and(Payment::query()->pluck('member_id', 'reference')->all())->toEqual($paymentOwners)
+        ->and(Payment::query()->count())->toBe(16)
+        ->and(OpeningWithdrawalFee::query()->count())->toBe(1);
+});
+
+it('imports the aggregate fee once without attributing it to a member', function (): void {
+    $this->seed(MusuwaNationSeeder::class);
+    $period = ContributionPeriod::query()->where('year', 2026)->where('month', 8)->firstOrFail();
+    $report = resolve(MonthlyReportData::class)->for($period);
+
+    expect(OpeningWithdrawalFee::query()->sole()->amount)->toBe(20295)
+        ->and(Payment::query()->sum('withdrawal_fee_amount'))->toBe(0)
+        ->and(PaymentAllocation::query()->sum('amount'))->toBe(945000)
+        ->and(resolve(ClubCashPosition::class)->verifiedInflows())->toBe(965295)
+        ->and($report['cash']['inflows'])->toBe(965295)
+        ->and($report['cash']['withdrawal_fees'])->toBe(20295)
+        ->and($report['contributions']['collected'])->toBe(945000)
+        ->and($report['payments']->sum('amount'))->toBe(965295);
+});
+
+it('refuses to take a requested number from an unrelated member', function (): void {
+    $member = Member::query()->where('member_number', '001')->firstOrFail();
+    $member->update(['member_number' => 'TEMP-001']);
+
+    $outsider = Member::factory()->create(['member_number' => '001']);
+
+    expect(fn () => $this->seed(MusuwaNationSeeder::class))->toThrow(RuntimeException::class, 'unrelated member')
+        ->and($member->fresh()->member_number)->toBe('TEMP-001')
+        ->and($outsider->fresh()->member_number)->toBe('001');
 });

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\ContributionPeriodStatus;
 use App\Enums\ObligationStatus;
 use App\Enums\PaymentStatus;
+use App\Models\ContributionPeriod;
 use App\Models\Member;
 use App\Models\MemberObligation;
 use App\Models\Payment;
@@ -49,8 +51,16 @@ final readonly class ApplyMemberAdvances
             foreach ($payments as $payment) {
                 $before = $payment->toArray();
                 $remaining = $payment->unapplied_amount;
+                $selectedPeriod = $payment->contribution_period_id === null ? null : ContributionPeriod::query()->find($payment->contribution_period_id);
+                $selectedMonth = $selectedPeriod === null ? null : $selectedPeriod->year * 12 + $selectedPeriod->month;
 
                 foreach ($obligations as $obligation) {
+                    $period = $obligation->contributionPeriod;
+
+                    if ($selectedMonth !== null && ($period === null || $period->status !== ContributionPeriodStatus::Open || $period->year * 12 + $period->month < $selectedMonth)) {
+                        continue;
+                    }
+
                     $applied = min($remaining, $obligation->outstanding());
 
                     if ($applied <= 0) {

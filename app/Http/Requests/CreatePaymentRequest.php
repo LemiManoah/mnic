@@ -31,6 +31,7 @@ final class CreatePaymentRequest extends FormRequest
             'member_id' => ['required', 'string', Rule::exists(Member::class, 'id')],
             // Amounts are whole UGX; zero or negative payments are rejected.
             'amount' => ['required', 'integer', 'min:1'],
+            'contribution_period_id' => ['required', 'uuid'],
             'withdrawal_fee_amount' => ['nullable', 'integer', 'min:0'],
             'contribution_due_amount' => ['nullable', 'integer', 'min:0'],
             'excess_allocation' => ['nullable', Rule::in(['advance', 'fees', 'split'])],

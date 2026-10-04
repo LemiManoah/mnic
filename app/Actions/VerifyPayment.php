@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\ContributionPeriodStatus;
 use App\Enums\ObligationStatus;
 use App\Enums\PaymentStatus;
+use App\Models\ContributionPeriod;
 use App\Models\Member;
 use App\Models\MemberObligation;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Notifications\PaymentVerified;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final readonly class VerifyPayment
@@ -34,6 +37,21 @@ final readonly class VerifyPayment
             throw_if($payment->withdrawal_fee_amount < 0 || $payment->withdrawal_fee_amount > $payment->amount, InvalidArgumentException::class, 'Invalid payment allocation.');
             throw_if($payment->withdrawal_fee_amount > 0 && ($payment->contribution_due_amount === null || $payment->contribution_due_amount === 0 || $payment->withdrawal_fee_amount > max(0, $payment->amount - $payment->contribution_due_amount)), InvalidArgumentException::class, 'Fees must come from the excess confirmed when the payment was recorded.');
 
+            $selectedPeriod = $payment->contribution_period_id === null ? null : ContributionPeriod::query()->lockForUpdate()->find($payment->contribution_period_id);
+
+            if ($payment->contribution_period_id !== null && ($selectedPeriod === null || $selectedPeriod->status !== ContributionPeriodStatus::Open)) {
+                throw ValidationException::withMessages(['payment' => __('The selected period is no longer open. Reject this payment and record it against an open period.')]);
+            }
+
+            if ($selectedPeriod !== null) {
+                $selectedObligation = MemberObligation::query()->where('member_id', $payment->member_id)
+                    ->where('contribution_period_id', $selectedPeriod->id)->lockForUpdate()->first();
+
+                if ($selectedObligation === null || in_array($selectedObligation->status, [ObligationStatus::Waived, ObligationStatus::Cancelled], true)) {
+                    throw ValidationException::withMessages(['payment' => __('The selected obligation is no longer eligible. Reject this payment and record it against an eligible open period.')]);
+                }
+            }
+
             $before = $payment->toArray();
             $remaining = $payment->contributionAmount();
 
@@ -47,13 +65,21 @@ final readonly class VerifyPayment
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
-                // Oldest period first, so payments always settle arrears before
-                // they run ahead into future obligations.
                 ->sortBy(fn (MemberObligation $obligation): string => sprintf(
                     '%04d-%02d',
                     $obligation->contributionPeriod->year ?? 0,
                     $obligation->contributionPeriod->month ?? 0,
                 ));
+
+            if ($selectedPeriod !== null) {
+                $selectedMonth = $selectedPeriod->year * 12 + $selectedPeriod->month;
+                $obligations = $obligations->filter(function (MemberObligation $obligation) use ($selectedMonth): bool {
+                    $period = $obligation->contributionPeriod;
+
+                    return $period !== null && $period->status === ContributionPeriodStatus::Open
+                        && $period->year * 12 + $period->month >= $selectedMonth;
+                });
+            }
 
             foreach ($obligations as $obligation) {
                 if ($remaining <= 0) {

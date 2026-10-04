@@ -35,9 +35,11 @@ final class PaymentVerified extends Notification implements ShouldQueue
                 'amount' => number_format($this->payment->amount).' UGX',
                 'reference' => $this->payment->reference,
             ]),
-            __('Contributions and advance: :amount UGX. Applied to your oldest unpaid months first; any remainder is held as advance credit.', [
-                'amount' => number_format($this->payment->contributionAmount()),
-            ]),
+            __($this->payment->contribution_period_id === null
+                ? 'Contributions and advance: :amount UGX. Applied to your oldest unpaid months first; any remainder is held as advance credit.'
+                : 'Contributions and advance: :amount UGX. Applied to your selected month and later open months; any remainder is held as advance credit.', [
+                    'amount' => number_format($this->payment->contributionAmount()),
+                ]),
             __('Withdrawal fee contribution collected: :amount UGX. This does not count towards your contribution balance.', [
                 'amount' => number_format($this->payment->withdrawal_fee_amount),
             ]),

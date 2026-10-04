@@ -67,6 +67,7 @@ const STATUS_VARIANT: Record<
 type PaymentMemberOption = MemberOption & {
     contribution_due_amount: number;
     contribution_due_period: string | null;
+    periods: { id: string; label: string; outstanding: number }[];
 };
 
 function RecordPaymentDialog({
@@ -78,11 +79,13 @@ function RecordPaymentDialog({
 }) {
     const [open, setOpen] = useState(false);
     const [memberId, setMemberId] = useState('');
+    const [periodId, setPeriodId] = useState('');
     const [amount, setAmount] = useState('');
     const [allocation, setAllocation] = useState('');
     const [splitFee, setSplitFee] = useState('');
     const member = members.find((item) => item.id === memberId);
-    const due = member?.contribution_due_amount ?? 0;
+    const period = member?.periods.find((item) => item.id === periodId);
+    const due = period?.outstanding ?? 0;
     const received = Number(amount) || 0;
     const excess = due > 0 ? Math.max(0, received - due) : 0;
     const fee =
@@ -115,12 +118,14 @@ function RecordPaymentDialog({
                     transform={(data) => ({
                         ...data,
                         contribution_due_amount: due,
+                        contribution_period_id: periodId || null,
                         excess_allocation: excess > 0 ? allocation : null,
                         withdrawal_fee_amount: fee,
                     })}
                     onSuccess={() => {
                         setOpen(false);
                         setMemberId('');
+                        setPeriodId('');
                         setAmount('');
                         setAllocation('');
                         setSplitFee('');
@@ -139,6 +144,7 @@ function RecordPaymentDialog({
                                     value={memberId}
                                     onChange={(event) => {
                                         setMemberId(event.target.value);
+                                        setPeriodId('');
                                         setAllocation('');
                                         setSplitFee('');
                                     }}
@@ -158,6 +164,48 @@ function RecordPaymentDialog({
                                     ))}
                                 </select>
                                 <InputError message={errors.member_id} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="contribution_period_id">
+                                    Contribution period
+                                </Label>
+                                <select
+                                    id="contribution_period_id"
+                                    name="contribution_period_id"
+                                    value={periodId}
+                                    onChange={(event) => {
+                                        setPeriodId(event.target.value);
+                                        setAllocation('');
+                                        setSplitFee('');
+                                    }}
+                                    disabled={!member}
+                                    required
+                                    className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+                                >
+                                    <option value="" disabled>
+                                        Select an open period
+                                    </option>
+                                    {member?.periods.map((option) => (
+                                        <option
+                                            key={option.id}
+                                            value={option.id}
+                                        >
+                                            {option.label} -{' '}
+                                            {formatUgx(option.outstanding)}{' '}
+                                            outstanding
+                                        </option>
+                                    ))}
+                                </select>
+                                {member && member.periods.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">
+                                        This member has no eligible open
+                                        periods.
+                                    </p>
+                                )}
+                                <InputError
+                                    message={errors.contribution_period_id}
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -181,18 +229,19 @@ function RecordPaymentDialog({
                                 <InputError message={errors.amount} />
                             </div>
 
-                            {member && (
+                            {period && (
                                 <div className="space-y-3 rounded-lg border bg-muted/30 p-3 text-sm">
                                     <p>
                                         {due > 0
-                                            ? `${member.contribution_due_period}: ${formatUgx(due)} outstanding.`
-                                            : 'No unpaid contribution month. This payment will be contribution advance credit.'}
+                                            ? `${period.label}: ${formatUgx(due)} outstanding.`
+                                            : 'This period is fully paid. This payment will be advance credit for later open months.'}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
                                         Based on verified payments. Pending
-                                        payments do not reduce this balance.
-                                        Contributions settle the oldest unpaid
-                                        month first.
+                                        payments do not reduce this balance. The
+                                        selected month is paid first, then later
+                                        open months. Earlier arrears are not
+                                        changed.
                                     </p>
                                     <InputError
                                         message={errors.contribution_due_amount}
@@ -265,11 +314,10 @@ function RecordPaymentDialog({
                                                 </div>
                                             )}
                                             <p className="text-xs text-muted-foreground">
-                                                Advance settles subsequent
-                                                unpaid months; any remainder is
-                                                held as credit. Fee
-                                                contributions are money
-                                                collected for charges, not
+                                                Advance settles later open
+                                                months; any remainder is held as
+                                                credit. Fee contributions are
+                                                money collected for charges, not
                                                 charges already spent.
                                             </p>
                                         </>
@@ -374,7 +422,10 @@ function RecordPaymentDialog({
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={processing}>
+                                <Button
+                                    type="submit"
+                                    disabled={processing || !period}
+                                >
                                     Submit payment
                                 </Button>
                             </DialogFooter>
@@ -598,6 +649,12 @@ export default function PaymentIndex({
                                     <TableCell>{payment.member_name}</TableCell>
                                     <TableCell>
                                         {formatUgx(payment.amount)}
+                                        {payment.selected_period && (
+                                            <span className="block text-xs text-muted-foreground">
+                                                Selected period:{' '}
+                                                {payment.selected_period}
+                                            </span>
+                                        )}
                                         <span className="block text-xs text-muted-foreground">
                                             {formatUgx(
                                                 payment.contribution_amount,
@@ -718,16 +775,24 @@ export default function PaymentIndex({
                                                         >
                                                             {({
                                                                 processing,
+                                                                errors,
                                                             }) => (
-                                                                <Button
-                                                                    type="submit"
-                                                                    size="sm"
-                                                                    disabled={
-                                                                        processing
-                                                                    }
-                                                                >
-                                                                    Verify
-                                                                </Button>
+                                                                <>
+                                                                    <Button
+                                                                        type="submit"
+                                                                        size="sm"
+                                                                        disabled={
+                                                                            processing
+                                                                        }
+                                                                    >
+                                                                        Verify
+                                                                    </Button>
+                                                                    <InputError
+                                                                        message={
+                                                                            errors.payment
+                                                                        }
+                                                                    />
+                                                                </>
                                                             )}
                                                         </Form>
 

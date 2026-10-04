@@ -8,6 +8,7 @@ use App\Enums\ExpenseStatus;
 use App\Enums\PaymentStatus;
 use App\Models\ContributionPeriod;
 use App\Models\Expense;
+use App\Models\OpeningWithdrawalFee;
 use App\Models\Payment;
 
 /**
@@ -23,7 +24,7 @@ final readonly class ClubCashPosition
     {
         return (int) Payment::query()
             ->where('status', PaymentStatus::Verified->value)
-            ->sum('amount');
+            ->sum('amount') + (int) OpeningWithdrawalFee::query()->sum('amount');
     }
 
     public function settledOutflows(): int
@@ -47,7 +48,7 @@ final readonly class ClubCashPosition
             ->where('status', PaymentStatus::Verified->value)
             ->whereYear('paid_on', $period->year)
             ->whereMonth('paid_on', $period->month)
-            ->sum('amount');
+            ->sum('amount') + $this->openingWithdrawalFeesForPeriod($period);
     }
 
     public function withdrawalFeesForPeriod(ContributionPeriod $period): int
@@ -56,7 +57,15 @@ final readonly class ClubCashPosition
             ->where('status', PaymentStatus::Verified->value)
             ->whereYear('paid_on', $period->year)
             ->whereMonth('paid_on', $period->month)
-            ->sum('withdrawal_fee_amount');
+            ->sum('withdrawal_fee_amount') + $this->openingWithdrawalFeesForPeriod($period);
+    }
+
+    public function openingWithdrawalFeesForPeriod(ContributionPeriod $period): int
+    {
+        return (int) OpeningWithdrawalFee::query()
+            ->whereYear('paid_on', $period->year)
+            ->whereMonth('paid_on', $period->month)
+            ->sum('amount');
     }
 
     /**

@@ -124,6 +124,7 @@ export type PaymentRow = {
     withdrawal_fee_amount: number;
     contribution_amount: number;
     contribution_due_amount: number | null;
+    selected_period: string | null;
     paid_on: string;
     method: PaymentMethod;
     reference: string;

@@ -12,6 +12,7 @@ use App\Enums\ReconciliationStatus;
 use App\Models\ContributionPeriod;
 use App\Models\Expense;
 use App\Models\MemberObligation;
+use App\Models\OpeningWithdrawalFee;
 use App\Models\Payment;
 use App\Models\PeriodAdjustment;
 use App\Models\Reconciliation;
@@ -125,7 +126,19 @@ final readonly class MonthlyReportData
                     'withdrawal_fee_amount' => $payment->withdrawal_fee_amount,
                     'contribution_amount' => $payment->contributionAmount(),
                     'paid_on' => $payment->paid_on->toDateString(),
-                ]),
+                ])->concat(OpeningWithdrawalFee::query()
+                ->whereYear('paid_on', $period->year)
+                ->whereMonth('paid_on', $period->month)
+                ->get()
+                ->map(fn (OpeningWithdrawalFee $receipt): array => [
+                    'id' => $receipt->id,
+                    'member_name' => __('Unallocated opening withdrawal fee'),
+                    'reference' => $receipt->reference,
+                    'amount' => $receipt->amount,
+                    'withdrawal_fee_amount' => $receipt->amount,
+                    'contribution_amount' => 0,
+                    'paid_on' => $receipt->paid_on->toDateString(),
+                ])),
             'expenses' => Expense::query()
                 ->whereIn('status', [ExpenseStatus::Paid->value, ExpenseStatus::Verified->value])
                 ->whereYear('paid_on', $period->year)

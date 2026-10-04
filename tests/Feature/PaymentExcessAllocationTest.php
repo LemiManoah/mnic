@@ -9,6 +9,7 @@ use App\Actions\RecordPayment;
 use App\Actions\RequestPaymentReversal;
 use App\Actions\VerifyPayment;
 use App\Enums\ClubRole;
+use App\Enums\ContributionPeriodStatus;
 use App\Enums\ObligationStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -56,7 +57,7 @@ it('credits every shilling at or below the outstanding obligation', function (in
 it('requires an explicit excess allocation over HTTP', function (): void {
     $actor = memberWithRole(ClubRole::Treasurer);
     $this->actingAs($actor->user)
-        ->post(route('payment.store'), excessPaymentAttributes($this->member))
+        ->post(route('payment.store'), [...excessPaymentAttributes($this->member), 'contribution_period_id' => $this->period->id])
         ->assertSessionHasErrors('excess_allocation');
 
     expect(Payment::query()->count())->toBe(0);
@@ -88,7 +89,7 @@ it('keeps fees separate from contributions and retains gross cash', function (st
         'payment' => $payment->load(['member', 'recordedByMember', 'reviewedByMember']),
         'allocations' => collect([['period' => 'August 2026', 'amount' => 60000]]),
     ])->render();
-    expect($html)->toContain('Withdrawal fee contribution collected', number_format($fee), '62,000')
+    expect($html)->toContain('Withdrawal fee', number_format($fee), '62,000')
         ->and(implode(' ', new PaymentVerified($payment)->bodyLines()))->toContain(number_format(62000 - $fee), number_format($fee));
 })->with([['advance', 0], ['fees', 2000], ['split', 1000]]);
 
@@ -132,6 +133,7 @@ it('rejects a stale balance instead of silently changing the split', function ()
     $actor = memberWithRole(ClubRole::Treasurer);
     $this->actingAs($actor->user)->post(route('payment.store'), [
         ...excessPaymentAttributes($this->member),
+        'contribution_period_id' => $this->period->id,
         'contribution_due_amount' => 60000,
         'excess_allocation' => 'fees',
         'withdrawal_fee_amount' => 2000,
@@ -213,9 +215,11 @@ it('exposes the allocation to reviewers and excludes fees from the member dashbo
     $actor = memberWithRole(ClubRole::Treasurer);
     $memberUser = User::factory()->withoutTwoFactor()->create();
     $memberUser->assignRole(ClubRole::Member->value);
+
     $this->member->update(['user_id' => $memberUser->id]);
     $this->actingAs($actor->user)->post(route('payment.store'), [
         ...excessPaymentAttributes($this->member),
+        'contribution_period_id' => $this->period->id,
         'contribution_due_amount' => 60000,
         'excess_allocation' => 'fees',
         'withdrawal_fee_amount' => 2000,
@@ -251,4 +255,75 @@ it('renders advance only receipts even when there are no period allocations', fu
         'allocations' => collect(),
     ])->render();
     expect($html)->toContain('Held as advance against future months', '32,000', 'Total received');
+});
+
+it('settles a selected open month before later months without touching earlier arrears', function (): void {
+    $september = ContributionPeriod::factory()->forMonth(2026, 9)->create();
+    $october = ContributionPeriod::factory()->forMonth(2026, 10)->create();
+    $selected = MemberObligation::factory()->create(['member_id' => $this->member->id, 'contribution_period_id' => $september->id]);
+    $later = MemberObligation::factory()->create(['member_id' => $this->member->id, 'contribution_period_id' => $october->id]);
+
+    $payment = resolve(RecordPayment::class)->handle([
+        ...excessPaymentAttributes($this->member, 64000),
+        'contribution_period_id' => $september->id,
+        'excess_allocation' => 'split',
+        'withdrawal_fee_amount' => 2000,
+    ]);
+    $payment = resolve(VerifyPayment::class)->handle($payment, Member::factory()->create());
+
+    expect($this->obligation->fresh()->amount_paid)->toBe(0)
+        ->and($selected->fresh()->amount_paid)->toBe(60000)
+        ->and($later->fresh()->amount_paid)->toBe(2000)
+        ->and($payment->withdrawal_fee_amount)->toBe(2000)
+        ->and($payment->unapplied_amount)->toBe(0);
+});
+
+it('rejects closed selected periods', function (): void {
+    $this->period->update(['status' => ContributionPeriodStatus::Closed]);
+    resolve(RecordPayment::class)->handle([
+        ...excessPaymentAttributes($this->member, 32000),
+        'contribution_period_id' => $this->period->id,
+    ]);
+})->throws(ValidationException::class);
+
+it('rejects periods without an obligation for the member', function (): void {
+    $otherPeriod = ContributionPeriod::factory()->forMonth(2026, 9)->create();
+    resolve(RecordPayment::class)->handle([
+        ...excessPaymentAttributes($this->member, 32000),
+        'contribution_period_id' => $otherPeriod->id,
+    ]);
+})->throws(ValidationException::class);
+
+it('requires rerecording if the selected period closes before verification', function (): void {
+    $payment = resolve(RecordPayment::class)->handle([
+        ...excessPaymentAttributes($this->member, 32000),
+        'contribution_period_id' => $this->period->id,
+    ]);
+    $this->period->update(['status' => ContributionPeriodStatus::Closed]);
+    resolve(VerifyPayment::class)->handle($payment, Member::factory()->create());
+})->throws(ValidationException::class);
+
+it('does not send held selected-period advances into earlier arrears', function (): void {
+    seedClubSettings();
+    $september = ContributionPeriod::factory()->forMonth(2026, 9)->create();
+    MemberObligation::factory()->create(['member_id' => $this->member->id, 'contribution_period_id' => $september->id]);
+    $payment = resolve(RecordPayment::class)->handle([
+        ...excessPaymentAttributes($this->member, 62000),
+        'contribution_period_id' => $september->id,
+        'excess_allocation' => 'advance',
+    ]);
+    $payment = resolve(VerifyPayment::class)->handle($payment, Member::factory()->create());
+
+    $october = resolve(OpenContributionPeriod::class)->handle(2026, 10);
+    $later = MemberObligation::query()->where('member_id', $this->member->id)->where('contribution_period_id', $october->id)->firstOrFail();
+
+    expect($this->obligation->fresh()->amount_paid)->toBe(0)
+        ->and($later->amount_paid)->toBe(2000)
+        ->and($payment->fresh()->unapplied_amount)->toBe(0);
+});
+
+it('requires a selected period when submitting through the payment form', function (): void {
+    $actor = memberWithRole(ClubRole::Treasurer);
+    $this->actingAs($actor->user)->post(route('payment.store'), excessPaymentAttributes($this->member, 32000))
+        ->assertSessionHasErrors('contribution_period_id');
 });

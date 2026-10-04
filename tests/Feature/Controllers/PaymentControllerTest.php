@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\ClubRole;
 use App\Enums\PaymentMethod;
 use App\Models\Member;
+use App\Models\MemberObligation;
 use App\Models\Payment;
 use App\Models\PaymentEvidence;
 use Illuminate\Http\UploadedFile;
@@ -57,6 +58,7 @@ it('allows a treasurer to record a payment for another member', function (): voi
 
     $response = $this->actingAs($actor->user)->post(route('payment.store'), [
         'member_id' => $member->id,
+        'contribution_period_id' => MemberObligation::factory()->create(['member_id' => $member->id])->contribution_period_id,
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,
@@ -77,6 +79,7 @@ it('stores evidence uploaded with a payment', function (): void {
 
     $response = $this->actingAs($actor->user)->post(route('payment.store'), [
         'member_id' => $member->id,
+        'contribution_period_id' => MemberObligation::factory()->create(['member_id' => $member->id])->contribution_period_id,
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,
@@ -94,6 +97,7 @@ it('lets a plain member record a payment for themselves', function (): void {
 
     $response = $this->actingAs($actor->user)->post(route('payment.store'), [
         'member_id' => $actor->id,
+        'contribution_period_id' => MemberObligation::factory()->create(['member_id' => $actor->id])->contribution_period_id,
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::Cash->value,
@@ -109,6 +113,7 @@ it('stops a plain member recording a payment for somebody else', function (): vo
 
     $response = $this->actingAs($actor->user)->post(route('payment.store'), [
         'member_id' => $other->id,
+        'contribution_period_id' => MemberObligation::factory()->create(['member_id' => $other->id])->contribution_period_id,
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::Cash->value,
@@ -128,6 +133,7 @@ it('rejects a duplicate transaction reference', function (): void {
 
     $response = $this->actingAs($actor->user)->post(route('payment.store'), [
         'member_id' => $member->id,
+        'contribution_period_id' => MemberObligation::factory()->create(['member_id' => $member->id])->contribution_period_id,
         'amount' => 60000,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,
@@ -143,6 +149,7 @@ it('rejects a zero or negative amount', function (): void {
 
     $response = $this->actingAs($actor->user)->post(route('payment.store'), [
         'member_id' => $member->id,
+        'contribution_period_id' => MemberObligation::factory()->create(['member_id' => $member->id])->contribution_period_id,
         'amount' => 0,
         'paid_on' => now()->toDateString(),
         'method' => PaymentMethod::MobileMoney->value,

@@ -16,10 +16,12 @@ use App\Models\ContributionPeriod;
 use App\Models\Member;
 use App\Models\MemberObligation;
 use App\Models\MembershipStatusHistory;
+use App\Models\OpeningWithdrawalFee;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\PositionHolding;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -30,6 +32,14 @@ final class MusuwaNationSeeder extends Seeder
     private const string PASSWORD = 'password';
 
     private const string STARTED_ON = '2026-08-01';
+
+    /** @var array<int, string> */
+    private const array MEMBER_NUMBERS = [
+        1 => '001', 2 => '004', 3 => '003', 4 => '015', 5 => '011',
+        6 => '016', 7 => '019', 8 => '010', 9 => '009', 10 => '006',
+        11 => '007', 12 => '002', 13 => '012', 14 => '020', 15 => '017',
+        16 => '008', 17 => '014', 18 => '018', 19 => '013', 20 => '005',
+    ];
 
     /** @var array<int, int> */
     private const array AUGUST_CONTRIBUTIONS = [
@@ -63,6 +73,12 @@ final class MusuwaNationSeeder extends Seeder
         ['name' => 'Tumwine John Esau', 'email' => 'johnesaut@gmail.com', 'position' => ClubPosition::AssistantMobilizer],
     ];
 
+    /** @var array<int, Member> */
+    private array $membersBySequence = [];
+
+    /** @var array<int, string> */
+    private array $originalNumbers = [];
+
     public function run(): void
     {
         throw_if(
@@ -81,6 +97,7 @@ final class MusuwaNationSeeder extends Seeder
                 $this->seedMembers();
                 $this->seedContributionPeriods();
                 $this->seedAugustContributions();
+                $this->seedAugustWithdrawalFees();
             });
         } finally {
             Notification::swap($notifications);
@@ -89,19 +106,55 @@ final class MusuwaNationSeeder extends Seeder
 
     private function seedMembers(): void
     {
+        $this->membersBySequence = [];
+        $this->originalNumbers = [];
+
         foreach (self::MEMBERS as $index => $definition) {
-            $memberNumber = sprintf('MN-%04d', $index + 1);
-            $member = Member::query()->where('member_number', $memberNumber)->first();
+            $names = [$definition['name']];
+
+            if ($definition['name'] === 'Ssekweyama Fredrick') {
+                $names[] = 'Fredrick Ssekweyama';
+            }
+
+            $matches = Member::query()->with('user')
+                ->where(fn (Builder $query): Builder => $query
+                    ->whereHas('user', fn (Builder $user): Builder => $user->where('email', $definition['email']))
+                    ->orWhereIn('full_name', $names))
+                ->lockForUpdate()->get();
+
+            throw_if($matches->count() > 1, RuntimeException::class, 'Ambiguous member identity: '.$definition['name']);
+            $member = $matches->first();
+
+            if ($member !== null) {
+                $this->membersBySequence[$index + 1] = $member;
+                $this->originalNumbers[$index + 1] = $member->member_number;
+            }
+        }
+
+        $memberIds = array_map(static fn (Member $member): string => $member->id, $this->membersBySequence);
+        throw_if(
+            Member::query()->whereIn('member_number', array_values(self::MEMBER_NUMBERS))->whereNotIn('id', $memberIds)->exists(),
+            RuntimeException::class,
+            'A requested member number belongs to an unrelated member. Resolve the conflict before importing.',
+        );
+
+        foreach ($this->membersBySequence as $sequence => $member) {
+            if ($member->member_number !== self::MEMBER_NUMBERS[$sequence]) {
+                $member->update(['member_number' => 'RENUMBER-'.$member->id]);
+            }
+        }
+
+        foreach (self::MEMBERS as $index => $definition) {
+            $sequence = $index + 1;
+            $memberNumber = self::MEMBER_NUMBERS[$sequence];
+            $member = $this->membersBySequence[$sequence] ?? null;
             $user = $member->user ?? User::query()->firstOrNew(['email' => $definition['email']]);
 
             if (! $user->exists) {
                 $user->forceFill(['password' => self::PASSWORD]);
             }
 
-            $user->forceFill([
-                'email' => $definition['email'],
-                'name' => $definition['name'],
-            ])->save();
+            $user->forceFill(['email' => $definition['email'], 'name' => $definition['name']])->save();
 
             if ($member === null) {
                 $member = Member::query()->create([
@@ -133,8 +186,14 @@ final class MusuwaNationSeeder extends Seeder
 
                 $user->assignRole(($definition['role'] ?? ClubRole::Member)->value);
             } else {
-                $member->update(['full_name' => $definition['name'], 'user_id' => $user->id]);
+                $before = [...$member->toArray(), 'member_number' => $this->originalNumbers[$sequence]];
+                $member->update(['member_number' => $memberNumber, 'full_name' => $definition['name'], 'user_id' => $user->id]);
+                if ($member->wasChanged(['member_number', 'full_name', 'user_id'])) {
+                    resolve(RecordAuditEvent::class)->handle('member.opening_roll_updated', $member, null, $before, $member->toArray());
+                }
             }
+
+            $this->membersBySequence[$sequence] = $member;
         }
     }
 
@@ -156,11 +215,19 @@ final class MusuwaNationSeeder extends Seeder
         foreach (self::AUGUST_CONTRIBUTIONS as $sequence => $amount) {
             $reference = sprintf('OPENING-202608-MN-%04d', $sequence);
 
-            if (Payment::query()->where('reference', $reference)->exists()) {
+            $member = $this->membersBySequence[$sequence];
+            $existingPayment = Payment::query()->where('reference', $reference)->first();
+
+            if ($existingPayment !== null) {
+                throw_if($existingPayment->member_id !== $member->id, RuntimeException::class, 'An opening payment belongs to a different member. Review the import before continuing.');
+
+                if (str_contains($existingPayment->notes ?? '', 'Excludes the UGX 20,295 unallocated withdrawal-charge balance.')) {
+                    $existingPayment->update(['notes' => str_replace('The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.', 'The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.', $existingPayment->notes ?? '')]);
+                }
+
                 continue;
             }
 
-            $member = Member::query()->where('member_number', sprintf('MN-%04d', $sequence))->firstOrFail();
             $obligation = MemberObligation::query()->where('contribution_period_id', $period->id)
                 ->where('member_id', $member->id)->firstOrFail();
 
@@ -168,13 +235,14 @@ final class MusuwaNationSeeder extends Seeder
 
             $payment = Payment::query()->create([
                 'member_id' => $member->id,
+                'contribution_period_id' => $period->id,
                 'amount' => $amount,
                 'unapplied_amount' => 0,
                 'paid_on' => '2026-08-31',
                 'method' => PaymentMethod::MobileMoney,
                 'reference' => $reference,
                 'status' => PaymentStatus::Verified,
-                'notes' => 'August opening contribution imported from the report dated 1 September 2026 and member-owner corrections. August 31 is an accounting date, not a known transaction date. Reference is an import identifier, not a Mobile Money receipt. Trevor and James later cleared August. Individual transaction dates and verification officers were not supplied. Excludes the UGX 20,295 unallocated withdrawal-charge balance.',
+                'notes' => 'August opening contribution imported from the report dated 1 September 2026 and member-owner corrections. August 31 is an accounting date, not a known transaction date. Reference is an import identifier, not a Mobile Money receipt. Trevor and James later cleared August. Individual transaction dates and verification officers were not supplied. The UGX 20,295 unallocated withdrawal fee is recorded separately as a club opening receipt.',
             ]);
 
             PaymentAllocation::query()->create([
@@ -189,6 +257,26 @@ final class MusuwaNationSeeder extends Seeder
             ]);
 
             resolve(RecordAuditEvent::class)->handle('payment.opening_balance_imported', $payment, null, null, $payment->toArray());
+        }
+    }
+
+    private function seedAugustWithdrawalFees(): void
+    {
+        $period = ContributionPeriod::query()->where('year', 2026)->where('month', 8)->firstOrFail();
+        $receipt = OpeningWithdrawalFee::query()->firstOrCreate(
+            ['reference' => 'OPENING-202608-WITHDRAWAL-FEES'],
+            [
+                'contribution_period_id' => $period->id,
+                'amount' => 20295,
+                'paid_on' => '2026-08-31',
+                'notes' => 'Aggregate withdrawal fee received through Mobile Money by Lubega James, from the report dated 1 September 2026. Individual member allocations and actual payment dates were not supplied. August 31 is an accounting date. This is money received, not an expense. No additional fees are assumed for Trevor or James later clearing August.',
+            ],
+        );
+
+        throw_if($receipt->amount !== 20295 || $receipt->contribution_period_id !== $period->id, RuntimeException::class, 'The August opening withdrawal fee differs from the report. Review it before importing.');
+
+        if ($receipt->wasRecentlyCreated) {
+            resolve(RecordAuditEvent::class)->handle('withdrawal_fee.opening_balance_imported', $receipt, null, null, $receipt->toArray());
         }
     }
 }

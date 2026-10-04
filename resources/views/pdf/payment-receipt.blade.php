@@ -66,7 +66,7 @@
                     </tr>
                 @endif
                 <tr>
-                    <td>Withdrawal fee contribution collected (not an expense)</td>
+                    <td>Withdrawal fee</td>
                     <td class="num">{{ number_format($payment->withdrawal_fee_amount) }}</td>
                 </tr>
                 <tr>

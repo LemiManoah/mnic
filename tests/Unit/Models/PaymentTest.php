@@ -37,6 +37,7 @@ test('to array', function (): void {
             'reversal_requested_at',
             'withdrawal_fee_amount',
             'contribution_due_amount',
+            'contribution_period_id',
         ]);
 });
 

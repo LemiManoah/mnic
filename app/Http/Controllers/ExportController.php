@@ -10,6 +10,7 @@ use App\Models\ContributionPeriod;
 use App\Models\Expense;
 use App\Models\Member;
 use App\Models\MemberObligation;
+use App\Models\OpeningWithdrawalFee;
 use App\Models\Payment;
 use App\Models\Proposal;
 use App\Models\User;
@@ -202,6 +203,20 @@ final readonly class ExportController
             ])
             ->values()
             ->all();
+
+        $rows = array_merge($rows, OpeningWithdrawalFee::query()->oldest('paid_on')->get()
+            ->map(fn (OpeningWithdrawalFee $receipt): array => [
+                $receipt->reference,
+                __('Unallocated opening withdrawal fee'),
+                $receipt->amount,
+                0,
+                $receipt->amount,
+                0,
+                $receipt->paid_on->toDateString(),
+                __('Mobile Money'),
+                null,
+                null,
+            ])->all());
 
         return $report->render(
             $this->format($request),
